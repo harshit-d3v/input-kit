@@ -4,6 +4,8 @@ Headless, unstyled React primitives for inputs and UI. Every package ships behav
 
 Monorepo for the [`@input-kit`](https://www.npmjs.com/org/input-kit) npm scope. MIT licensed.
 
+**→ [Live demos for every package](https://input-kit.vercel.app)**
+
 ```bash
 npm install @input-kit/table @input-kit/combobox @input-kit/toast
 ```
