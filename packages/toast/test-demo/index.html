@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Toast Notifications Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      padding: 3rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { color: #f5576c; font-size: 2.5rem; margin-bottom: 0.5rem; }
+    .subtitle { color: #6c757d; margin-bottom: 2.5rem; }
+    .buttons-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .btn {
+      padding: 1.25rem;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    .btn-error {
+      background: #dc3545;
+      color: white;
+    }
+    .btn-warning {
+      background: #ffc107;
+      color: #212529;
+    }
+    .btn-info {
+      background: #17a2b8;
+      color: white;
+    }
+    .toast-container {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 400px;
+    }
+    .toast {
+      padding: 1.25rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: slideIn 0.3s ease-out;
+      color: white;
+      font-weight: 500;
+    }
+    .toast.removing {
+      animation: slideOut 0.3s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+    .toast.success {
+      background: #28a745;
+    }
+    .toast.error {
+      background: #dc3545;
+    }
+    .toast.warning {
+      background: #ffc107;
+      color: #212529;
+    }
+    .toast.info {
+      background: #17a2b8;
+    }
+    .toast-icon {
+      font-size: 1.5rem;
+    }
+    .toast-content {
+      flex: 1;
+    }
+    .toast-close {
+      background: none;
+      border: none;
+      color: inherit;
+      font-size: 1.25rem;
+      cursor: pointer;
+      opacity: 0.7;
+      padding: 0;
+      width: 24px;
+      height: 24px;
+    }
+    .toast-close:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+
+  <div class="container">
+    <h1>🍞 Toast Notifications</h1>
+    <p class="subtitle">Click buttons to show different types of toast notifications</p>
+    
+    <div class="buttons-grid">
+      <button class="btn btn-success" onclick="showToast('success', '✅ Success! Your changes have been saved.')">
+        Show Success
+      </button>
+      <button class="btn btn-error" onclick="showToast('error', '❌ Error! Something went wrong.')">
+        Show Error
+      </button>
+      <button class="btn btn-warning" onclick="showToast('warning', '⚠️ Warning! Please review your input.')">
+        Show Warning
+      </button>
+      <button class="btn btn-info" onclick="showToast('info', 'ℹ️ Info: New updates are available!')">
+        Show Info
+      </button>
+    </div>
+
+    <button class="btn" style="width: 100%; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;" onclick="showMultiple()">
+      🚀 Show Multiple Toasts
+    </button>
+  </div>
+
+  <script>
+    const toastContainer = document.getElementById('toastContainer');
+    let toastId = 0;
+
+    function showToast(type, message, duration = 4000) {
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.id = `toast-${toastId++}`;
+      
+      const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '!',
+        info: 'i'
+      };
+      
+      toast.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">${message}</div>
+        <button class="toast-close" onclick="removeToast('${toast.id}')">×</button>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
+      setTimeout(() => {
+        removeToast(toast.id);
+      }, duration);
+      
+      return toast.id;
+    }
+
+    function removeToast(id) {
+      const toast = document.getElementById(id);
+      if (toast) {
+        toast.classList.add('removing');
+        setTimeout(() => {
+          toast.remove();
+        }, 300);
+      }
+    }
+
+    function showMultiple() {
+      setTimeout(() => showToast('info', 'ℹ️ Loading your data...'), 0);
+      setTimeout(() => showToast('success', '✅ Data loaded successfully!'), 1000);
+      setTimeout(() => showToast('warning', '⚠️ Cache will expire in 5 minutes'), 2000);
+    }
+  </script>
+</body>
+</html>

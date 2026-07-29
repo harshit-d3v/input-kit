@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/hooks Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #4f46e5, #ec4899);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 60px;
+      border-radius: 32px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 50px;
+      color: #1e293b;
+      font-size: 2.5rem;
+      font-weight: 800;
+    }
+    .hooks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 30px;
+    }
+    .hook-card {
+      padding: 30px;
+      background: #f8fafc;
+      border-radius: 24px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hook-card:hover { transform: translateY(-5px); border-color: #4f46e5; box-shadow: 0 15px 30px rgba(79, 70, 229, 0.1); }
+    .hook-title {
+      font-family: 'Fira Code', monospace;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #4f46e5;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .hook-desc { font-size: 0.95rem; color: #64748b; margin-bottom: 25px; line-height: 1.6; }
+    .demo-area {
+      background: #fff;
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .btn {
+      padding: 12px 24px;
+      background: #4f46e5;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:hover { transform: scale(1.05); background: #4338ca; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    
+    .status-val { font-size: 1.8rem; font-weight: 800; color: #1e293b; margin-bottom: 15px; display: block; }
+    .badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; background: #e0e7ff; color: #4338ca; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Utility Hooks Kit</h1>
+    
+    <div class="hooks-grid">
+      <div class="hook-card">
+        <span class="hook-title">useToggle()</span>
+        <p class="hook-desc">The perfect solution for managing modals, menus, or any binary state transitions.</p>
+        <div class="demo-area">
+          <span id="toggleVal" class="status-val">OFF</span>
+          <button class="btn" onclick="toggle()">Switch State</button>
+        </div>
+      </div>
+
+      <div class="hook-card">
+        <span class="hook-title">useCounter()</span>
+        <p class="hook-desc">Advanced numeric state management with min/max bounds and step controls.</p>
+        <div class="demo-area">
+          <span id="countVal" class="status-val">0</span>
+          <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-secondary" onclick="count(-1)">-</button>
+            <button class="btn btn-secondary" onclick="count(1)">+</button>
+            <button class="btn" onclick="resetCount()">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hook-card">
+        <span class="hook-title">useTimeout()</span>
+        <p class="hook-desc">Safe declarative timeouts that automatically clean up on component unmount.</p>
+        <div class="demo-area">
+          <span id="timeoutMsg" style="display:block; margin-bottom:15px; font-weight:700; color:#64748b;">Idle</span>
+          <button class="btn" onclick="startTimeout()">Start 3s Timer</button>
+        </div>
+      </div>
+
+      <div class="hook-card">
+        <span class="hook-title">useWindowSize()</span>
+        <p class="hook-desc">Real-time tracking of browser dimensions for responsive logic implementation.</p>
+        <div class="demo-area">
+          <div style="margin-bottom:10px;"><span class="badge">W</span> <strong id="winW">1920</strong></div>
+          <div><span class="badge">H</span> <strong id="winH">1080</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let toggled = false;
+    function toggle() {
+      toggled = !toggled;
+      const el = document.getElementById('toggleVal');
+      el.textContent = toggled ? 'ON' : 'OFF';
+      el.style.color = toggled ? '#10b981' : '#1e293b';
+    }
+
+    let c = 0;
+    function count(d) {
+      c += d;
+      document.getElementById('countVal').textContent = c;
+    }
+    function resetCount() { c = 0; count(0); }
+
+    function startTimeout() {
+      const msg = document.getElementById('timeoutMsg');
+      msg.textContent = 'Timer Started...';
+      msg.style.color = '#f59e0b';
+      setTimeout(() => {
+        msg.textContent = 'Time Up!';
+        msg.style.color = '#10b981';
+        setTimeout(() => { msg.textContent = 'Idle'; msg.style.color = '#64748b'; }, 2000);
+      }, 3000);
+    }
+
+    function updateSize() {
+      document.getElementById('winW').textContent = window.innerWidth + 'px';
+      document.getElementById('winH').textContent = window.innerHeight + 'px';
+    }
+    window.addEventListener('resize', updateSize);
+    updateSize();
+  </script>
+</body>
+</html>

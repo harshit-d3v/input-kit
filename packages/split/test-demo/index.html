@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Split Pane Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: white;
+      padding: 2rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #f5576c; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+    .split-container {
+      height: 500px;
+      border: 2px solid #e9ecef;
+      border-radius: 16px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+    .pane {
+      overflow: auto;
+      padding: 2rem;
+    }
+    .pane-left {
+      background: linear-gradient(135deg, #f093fb10 0%, #f5576c10 100%);
+    }
+    .pane-right {
+      background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%);
+    }
+    .resizer {
+      width: 8px;
+      background: #dee2e6;
+      cursor: col-resize;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .resizer:hover {
+      background: #f5576c;
+    }
+    .resizer::after {
+      content: '⋮⋮';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 0.75rem;
+      letter-spacing: -2px;
+    }
+    .pane h3 {
+      color: #212529;
+      margin-bottom: 1rem;
+    }
+    .pane p {
+      color: #6c757d;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .list-item {
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 0.75rem;
+      border-left: 4px solid #f5576c;
+    }
+    .controls {
+      margin-top: 2rem;
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      margin: 0 0.5rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>↔️ Split Pane</h1>
+    <p class="subtitle">Drag the divider to resize panes horizontally</p>
+    
+    <div class="split-container" id="splitContainer">
+      <div class="pane pane-left" id="leftPane">
+        <h3>Left Pane</h3>
+        <p>This pane can be resized by dragging the divider in the middle.</p>
+        <div class="list-item">📌 Item 1: Dashboard Overview</div>
+        <div class="list-item">📊 Item 2: Analytics Reports</div>
+        <div class="list-item">⚙️ Item 3: Settings Panel</div>
+        <div class="list-item">👥 Item 4: User Management</div>
+        <div class="list-item">📁 Item 5: File Browser</div>
+      </div>
+      
+      <div class="resizer" id="resizer"></div>
+      
+      <div class="pane pane-right" id="rightPane">
+        <h3>Right Pane</h3>
+        <p>Content dynamically adjusts as you resize the panes.</p>
+        <p><strong>Current Width:</strong> <span id="rightWidth">50%</span></p>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <p>Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" onclick="resetSplit()">Reset (50/50)</button>
+      <button class="btn" onclick="setSplit(30)">30/70</button>
+      <button class="btn" onclick="setSplit(70)">70/30</button>
+    </div>
+  </div>
+
+  <script>
+    const splitContainer = document.getElementById('splitContainer');
+    const leftPane = document.getElementById('leftPane');
+    const rightPane = document.getElementById('rightPane');
+    const resizer = document.getElementById('resizer');
+    const rightWidth = document.getElementById('rightWidth');
+
+    let isResizing = false;
+
+    function updatePanes(leftPercent) {
+      const rightPercent = 100 - leftPercent;
+      leftPane.style.width = leftPercent + '%';
+      rightPane.style.width = rightPercent + '%';
+      rightWidth.textContent = rightPercent.toFixed(1) + '%';
+    }
+
+    resizer.addEventListener('mousedown', (e) => {
+      isResizing = true;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isResizing) return;
+
+      const containerRect = splitContainer.getBoundingClientRect();
+      const offsetX = e.clientX - containerRect.left;
+      const percentage = (offsetX / containerRect.width) * 100;
+
+      if (percentage > 20 && percentage < 80) {
+        updatePanes(percentage);
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isResizing) {
+        isResizing = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      }
+    });
+
+    function resetSplit() {
+      updatePanes(50);
+    }
+
+    function setSplit(leftPercent) {
+      updatePanes(leftPercent);
+    }
+
+    updatePanes(50);
+  </script>
+</body>
+</html>

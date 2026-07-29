@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/currency Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #10b981, #059669);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: #fff;
+      padding: 60px;
+      border-radius: 40px;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 50px;
+      color: #1e293b;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+    }
+    .input-section {
+      background: #f8fafc;
+      padding: 40px;
+      border-radius: 30px;
+      border: 2px solid #f1f5f9;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    .label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+    }
+    .input-wrapper {
+      position: relative;
+      display: inline-block;
+      width: 100%;
+    }
+    .currency-symbol {
+      position: absolute;
+      left: 30px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #cbd5e1;
+    }
+    input {
+      width: 100%;
+      padding: 20px 20px 20px 80px;
+      border: none;
+      background: #fff;
+      border-radius: 20px;
+      font-size: 3.5rem;
+      font-weight: 900;
+      color: #10b981;
+      outline: none;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.03);
+      transition: all 0.3s;
+    }
+    input:focus { box-shadow: 0 15px 30px rgba(16, 185, 129, 0.15); }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+    }
+    .result-card {
+      padding: 30px;
+      background: #f8fafc;
+      border-radius: 24px;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: all 0.3s;
+    }
+    .result-card:hover { transform: translateY(-5px); border-color: #10b981; }
+    .country-info { display: flex; align-items: center; gap: 12px; }
+    .flag { font-size: 1.5rem; }
+    .country-name { font-weight: 700; color: #64748b; font-size: 0.9rem; }
+    .formatted-val { font-size: 2rem; font-weight: 800; color: #1e293b; font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><line x1="12" y1="6" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="18"/></svg>Currency Kit
+    </h1>
+    
+    <div class="input-section">
+      <div class="label">Enter Amount</div>
+      <div class="input-wrapper">
+        <span class="currency-symbol">$</span>
+        <input type="number" id="amountInput" value="2500.75" oninput="update()">
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="result-card">
+        <div class="country-info"><span class="flag">🇺🇸</span> <span class="country-name">USD / United States</span></div>
+        <div class="formatted-val" id="usd"></div>
+      </div>
+      <div class="result-card">
+        <div class="country-info"><span class="flag">🇪🇺</span> <span class="country-name">EUR / Germany</span></div>
+        <div class="formatted-val" id="eur"></div>
+      </div>
+      <div class="result-card">
+        <div class="country-info"><span class="flag">🇬🇧</span> <span class="country-name">GBP / United Kingdom</span></div>
+        <div class="formatted-val" id="gbp"></div>
+      </div>
+      <div class="result-card">
+        <div class="country-info"><span class="flag">🇯🇵</span> <span class="country-name">JPY / Japan</span></div>
+        <div class="formatted-val" id="jpy"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function update() {
+      const v = parseFloat(document.getElementById('amountInput').value) || 0;
+      
+      const formats = [
+        { id: 'usd', locale: 'en-US', currency: 'USD', rate: 1 },
+        { id: 'eur', locale: 'de-DE', currency: 'EUR', rate: 0.92 },
+        { id: 'gbp', locale: 'en-GB', currency: 'GBP', rate: 0.79 },
+        { id: 'jpy', locale: 'ja-JP', currency: 'JPY', rate: 150.45 }
+      ];
+
+      formats.forEach(f => {
+        document.getElementById(f.id).textContent = new Intl.NumberFormat(f.locale, {
+          style: 'currency',
+          currency: f.currency
+        }).format(v * f.rate);
+      });
+    }
+
+    window.onload = update;
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/i18n Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6);
+      background-size: 300% 300%;
+      animation: drift 20s linear infinite;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+    }
+    @keyframes drift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+    
+    .main-container {
+      max-width: 750px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 60px;
+      border-radius: 48px;
+      box-shadow: 0 50px 150px rgba(0,0,0,0.3);
+      position: relative;
+    }
+    
+    .nav-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 60px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 30px;
+    }
+    h1 { color: #1e293b; font-size: 2.8rem; font-weight: 900; letter-spacing: -2px; }
+    
+    .language-bar {
+      display: flex;
+      background: #f1f5f9;
+      padding: 8px;
+      border-radius: 20px;
+      gap: 8px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+      max-width: 430px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .language-bar::-webkit-scrollbar { display: none; }
+    .lang-btn {
+      padding: 12px 16px;
+      border: none;
+      background: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 800;
+      color: #64748b;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .lang-btn.active {
+      background: #fff;
+      color: #ec4899;
+      box-shadow: 0 10px 20px rgba(236, 72, 153, 0.15);
+      transform: translateY(-2px);
+    }
+    
+    .hero-section {
+      margin-bottom: 50px;
+      animation: fadeIn 0.6s ease-out;
+    }
+    @keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+    
+    .title-text { font-size: 2.2rem; font-weight: 900; color: #1e293b; margin-bottom: 20px; line-height: 1.2; }
+    .desc-text { line-height: 1.8; color: #475569; margin-bottom: 40px; font-size: 1.15rem; font-weight: 500; }
+    
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
+    .feature-card { background: #fff; padding: 30px; border-radius: 28px; border: 2px solid #f1f5f9; transition: all 0.4s; }
+    .feature-card:hover { border-color: #ec4899; transform: scale(1.03) rotate(1deg); }
+    
+    .card-tag { font-size: 0.75rem; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 12px; display: block; }
+    .card-body { font-weight: 700; color: #1e293b; font-size: 1.2rem; }
+
+    .main-container.rtl .hero-section,
+    .main-container.rtl .status-footer,
+    .main-container.rtl .feature-card {
+      text-align: right;
+    }
+    
+    .status-footer { margin-top: 50px; text-align: center; color: #94a3b8; font-size: 0.95rem; font-weight: 600; border-top: 1px solid #f1f5f9; padding-top: 30px; }
+    .highlight { color: #ec4899; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <div class="main-container" id="app">
+    <div class="nav-header">
+      <h1 id="t_appTitle">I18n Engine</h1>
+      <div class="language-bar" id="languageBar">
+      </div>
+    </div>
+
+    <div class="hero-section">
+      <div class="title-text" id="t_welcome">Global Product Experience</div>
+      <p class="desc-text" id="t_tagline">We help developers build world-class applications that resonate with users across every continent and culture.</p>
+      
+      <div class="info-grid">
+        <div class="feature-card">
+          <span class="card-tag" id="t_lbl1">Preferences</span>
+          <div class="card-body" id="t_val1">Personal Profile</div>
+        </div>
+        <div class="feature-card">
+          <span class="card-tag" id="t_lbl2">Protection</span>
+          <div class="card-body" id="t_val2">Secure Shield</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="status-footer">
+      <span id="t_footerLabel">Current Localization</span>: <span class="highlight" id="curr">English (US)</span>
+    </div>
+  </div>
+
+  <script>
+    const languageBar = document.getElementById('languageBar');
+    const app = document.getElementById('app');
+    let pendingAnimations = [];
+
+    const db = {
+      en: { short: 'EN', appTitle: 'I18n Engine', welcome: 'Global Product Experience', tagline: 'We help developers build world-class applications that resonate with users across every continent and culture.', lbl1: 'Preferences', val1: 'Personal Profile', lbl2: 'Protection', val2: 'Secure Shield', footerLabel: 'Current Localization', name: 'English (US)', dir: 'ltr' },
+      es: { short: 'ES', appTitle: 'Motor I18n', welcome: 'Experiencia Global', tagline: 'Ayudamos a los desarrolladores a crear aplicaciones de clase mundial que resuenan con los usuarios en todos los continentes.', lbl1: 'Ajustes', val1: 'Perfil de Usuario', lbl2: 'Seguridad', val2: 'Escudo Seguro', footerLabel: 'Localización actual', name: 'Español (ES)', dir: 'ltr' },
+      fr: { short: 'FR', appTitle: 'Moteur I18n', welcome: 'Expérience Globale', tagline: 'Nous aidons les développeurs à créer des applications de classe mondiale qui trouvent un écho auprès des utilisateurs.', lbl1: 'Paramètres', val1: 'Profil Personnel', lbl2: 'Sécurité', val2: 'Bouclier Sûr', footerLabel: 'Localisation actuelle', name: 'Français (FR)', dir: 'ltr' },
+      de: { short: 'DE', appTitle: 'I18n-Engine', welcome: 'Globale Produkterfahrung', tagline: 'Wir helfen Entwicklern dabei, erstklassige Anwendungen zu entwickeln, die Nutzer auf allen Kontinenten und in allen Kulturen erreichen.', lbl1: 'Einstellungen', val1: 'Persönliches Profil', lbl2: 'Sicherheit', val2: 'Sicherer Schutz', footerLabel: 'Aktuelle Lokalisierung', name: 'Deutsch (DE)', dir: 'ltr' },
+      pt: { short: 'PT', appTitle: 'Motor I18n', welcome: 'Experiência Global de Produto', tagline: 'Ajudamos desenvolvedores a criar aplicações de classe mundial que se conectam com usuários em todos os continentes e culturas.', lbl1: 'Preferências', val1: 'Perfil Pessoal', lbl2: 'Proteção', val2: 'Escudo Seguro', footerLabel: 'Localização atual', name: 'Português (BR)', dir: 'ltr' },
+      hi: { short: 'HI', appTitle: 'I18n इंजन', welcome: 'वैश्विक उत्पाद अनुभव', tagline: 'हम डेवलपर्स को ऐसे विश्वस्तरीय एप्लिकेशन बनाने में मदद करते हैं जो हर महाद्वीप और संस्कृति के उपयोगकर्ताओं से जुड़ें।', lbl1: 'प्राथमिकताएँ', val1: 'व्यक्तिगत प्रोफ़ाइल', lbl2: 'सुरक्षा', val2: 'सुरक्षित कवच', footerLabel: 'वर्तमान स्थानीयकरण', name: 'हिन्दी (IN)', dir: 'ltr' },
+      ar: { short: 'AR', appTitle: 'محرك I18n', welcome: 'تجربة منتج عالمية', tagline: 'نساعد المطورين على بناء تطبيقات عالمية المستوى تتواصل مع المستخدمين عبر كل القارات والثقافات.', lbl1: 'التفضيلات', val1: 'الملف الشخصي', lbl2: 'الحماية', val2: 'درع آمن', footerLabel: 'الترجمة الحالية', name: 'العربية (AR)', dir: 'rtl' },
+      zh: { short: 'ZH', appTitle: 'I18n 引擎', welcome: '全球产品体验', tagline: '我们帮助开发者构建能够打动全球各大洲与文化用户的世界级应用。', lbl1: '偏好设置', val1: '个人资料', lbl2: '安全防护', val2: '安全护盾', footerLabel: '当前本地化', name: '简体中文 (CN)', dir: 'ltr' },
+      ja: { short: 'JA', appTitle: 'I18n エンジン', welcome: 'グローバルな製品体験', tagline: '私たちは、あらゆる大陸と文化圏のユーザーに響く世界水準のアプリケーション開発を支援します。', lbl1: '設定', val1: '個人プロフィール', lbl2: '保護', val2: 'セキュアシールド', footerLabel: '現在のローカライズ', name: '日本語 (JP)', dir: 'ltr' },
+      ru: { short: 'RU', appTitle: 'I18n Движок', welcome: 'Глобальный продуктовый опыт', tagline: 'Мы помогаем разработчикам создавать приложения мирового уровня, которые находят отклик у пользователей на всех континентах и в разных культурах.', lbl1: 'Настройки', val1: 'Личный профиль', lbl2: 'Защита', val2: 'Надежный щит', footerLabel: 'Текущая локализация', name: 'Русский (RU)', dir: 'ltr' },
+      ko: { short: 'KO', appTitle: 'I18n 엔진', welcome: '글로벌 제품 경험', tagline: '우리는 개발자가 모든 대륙과 문화권의 사용자에게 공감되는 세계적 수준의 애플리케이션을 만들 수 있도록 돕습니다.', lbl1: '환경설정', val1: '개인 프로필', lbl2: '보호', val2: '보안 실드', footerLabel: '현재 현지화', name: '한국어 (KR)', dir: 'ltr' },
+      it: { short: 'IT', appTitle: 'Motore I18n', welcome: 'Esperienza di Prodotto Globale', tagline: 'Aiutiamo gli sviluppatori a creare applicazioni di livello mondiale che entrano in sintonia con gli utenti di ogni continente e cultura.', lbl1: 'Preferenze', val1: 'Profilo Personale', lbl2: 'Protezione', val2: 'Scudo Sicuro', footerLabel: 'Localizzazione corrente', name: 'Italiano (IT)', dir: 'ltr' },
+      tr: { short: 'TR', appTitle: 'I18n Motoru', welcome: 'Küresel Ürün Deneyimi', tagline: 'Geliştiricilerin tüm kıtalardaki ve kültürlerdeki kullanıcılarla bağ kuran dünya standartlarında uygulamalar oluşturmasına yardımcı oluyoruz.', lbl1: 'Tercihler', val1: 'Kişisel Profil', lbl2: 'Koruma', val2: 'Güvenli Kalkan', footerLabel: 'Geçerli yerelleştirme', name: 'Türkçe (TR)', dir: 'ltr' },
+      nl: { short: 'NL', appTitle: 'I18n-engine', welcome: 'Wereldwijde productervaring', tagline: 'We helpen ontwikkelaars bij het bouwen van applicaties van wereldklasse die gebruikers op elk continent en in elke cultuur aanspreken.', lbl1: 'Voorkeuren', val1: 'Persoonlijk profiel', lbl2: 'Beveiliging', val2: 'Veilig schild', footerLabel: 'Huidige lokalisatie', name: 'Nederlands (NL)', dir: 'ltr' },
+      bn: { short: 'BN', appTitle: 'I18n ইঞ্জিন', welcome: 'গ্লোবাল প্রোডাক্ট অভিজ্ঞতা', tagline: 'আমরা ডেভেলপারদের এমন বিশ্বমানের অ্যাপ্লিকেশন তৈরি করতে সহায়তা করি যা সব মহাদেশ ও সংস্কৃতির ব্যবহারকারীদের সাথে সংযোগ স্থাপন করে।', lbl1: 'পছন্দসমূহ', val1: 'ব্যক্তিগত প্রোফাইল', lbl2: 'সুরক্ষা', val2: 'নিরাপদ ঢাল', footerLabel: 'বর্তমান স্থানীয়করণ', name: 'বাংলা (BD)', dir: 'ltr' },
+      ur: { short: 'UR', appTitle: 'I18n انجن', welcome: 'عالمی پروڈکٹ تجربہ', tagline: 'ہم ڈویلپرز کو ایسے عالمی معیار کے ایپلی کیشنز بنانے میں مدد دیتے ہیں جو ہر براعظم اور ثقافت کے صارفین سے جڑ سکیں۔', lbl1: 'ترجیحات', val1: 'ذاتی پروفائل', lbl2: 'تحفظ', val2: 'محفوظ ڈھال', footerLabel: 'موجودہ مقامیت', name: 'اردو (PK)', dir: 'rtl' },
+      id: { short: 'ID', appTitle: 'Mesin I18n', welcome: 'Pengalaman Produk Global', tagline: 'Kami membantu developer membangun aplikasi kelas dunia yang relevan bagi pengguna di setiap benua dan budaya.', lbl1: 'Preferensi', val1: 'Profil Pribadi', lbl2: 'Perlindungan', val2: 'Perisai Aman', footerLabel: 'Pelokalan saat ini', name: 'Bahasa Indonesia (ID)', dir: 'ltr' },
+      vi: { short: 'VI', appTitle: 'Bộ máy I18n', welcome: 'Trải nghiệm sản phẩm toàn cầu', tagline: 'Chúng tôi giúp nhà phát triển xây dựng các ứng dụng đẳng cấp thế giới có thể kết nối với người dùng ở mọi châu lục và nền văn hóa.', lbl1: 'Tùy chọn', val1: 'Hồ sơ cá nhân', lbl2: 'Bảo vệ', val2: 'Lá chắn an toàn', footerLabel: 'Bản địa hóa hiện tại', name: 'Tiếng Việt (VN)', dir: 'ltr' }
+    };
+
+    const localeOrder = ['en', 'es', 'fr', 'de', 'pt', 'hi', 'ar', 'zh', 'ja', 'ru', 'ko', 'it', 'tr', 'nl', 'bn', 'ur', 'id', 'vi'];
+
+    function clearAnimations() {
+      pendingAnimations.forEach(clearTimeout);
+      pendingAnimations = [];
+    }
+
+    function renderLanguageButtons(activeKey) {
+      languageBar.innerHTML = '';
+
+      localeOrder.forEach((key) => {
+        const data = db[key];
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `lang-btn${key === activeKey ? ' active' : ''}`;
+        button.textContent = data.short;
+        button.title = data.name;
+        button.addEventListener('click', () => switchUI(key));
+        languageBar.appendChild(button);
+      });
+    }
+
+    function switchUI(key) {
+      const data = db[key];
+      if (!data) return;
+
+      clearAnimations();
+      renderLanguageButtons(key);
+      document.documentElement.lang = key;
+      document.documentElement.dir = data.dir;
+      app.classList.toggle('rtl', data.dir === 'rtl');
+      
+      document.getElementById('curr').textContent = data.name;
+      
+      Object.keys(data).forEach(k => {
+        const el = document.getElementById('t_' + k);
+        if (el) {
+          el.style.transform = 'translateY(5px)';
+          el.style.opacity = '0';
+          const timeoutId = setTimeout(() => {
+            el.textContent = data[k];
+            el.style.transform = 'translateY(0)';
+            el.style.opacity = '1';
+          }, 200);
+          pendingAnimations.push(timeoutId);
+        }
+      });
+    }
+
+    switchUI('en');
+  </script>
+</body>
+</html>

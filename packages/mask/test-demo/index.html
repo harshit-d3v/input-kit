@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/mask Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #fff;
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #1e293b;
+      font-size: 2.2rem;
+    }
+    .field {
+      margin-bottom: 25px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #4b5563;
+      font-size: 0.95rem;
+    }
+    .input-wrapper {
+      position: relative;
+    }
+    input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f9fafb;
+    }
+    input:focus {
+      border-color: #667eea;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    .pattern-hint {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+    .badge {
+      background: #eff6ff;
+      color: #1e40af;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    
+    .status-area {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+    }
+    .status-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+      color: #64748b;
+      text-transform: uppercase;
+    }
+    .json-preview {
+      font-family: monospace;
+      font-size: 0.85rem;
+      background: #1e293b;
+      color: #38bdf8;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><path d="M2 12s3-5 10-5 10 5 10 5-3 5-10 5S2 12 2 12Z"/><path d="M12 7v10"/><path d="M8 9c1.2 1 2.5 1.5 4 1.5S14.8 10 16 9"/></svg>Input Mask
+    </h1>
+    
+    <div class="field">
+      <label>Phone Number</label>
+      <div class="input-wrapper">
+        <input type="text" id="phoneMask" placeholder="(000) 000-0000">
+      </div>
+      <div class="pattern-hint">
+        <span>Pattern: <code class="badge">(999) 999-9999</code></span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Credit Card</label>
+      <div class="input-wrapper">
+        <input type="text" id="cardMask" placeholder="0000 0000 0000 0000">
+      </div>
+      <div class="pattern-hint">
+        <span>Pattern: <code class="badge">9999 9999 9999 9999</code></span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Date of Birth</label>
+      <div class="input-wrapper">
+        <input type="text" id="dateMask" placeholder="MM / DD / YYYY">
+      </div>
+      <div class="pattern-hint">
+        <span>Pattern: <code class="badge">99 / 99 / 9999</code></span>
+      </div>
+    </div>
+
+    <div class="status-area">
+      <div class="status-title">Extracted Raw Values</div>
+      <pre class="json-preview" id="rawValues">{
+  "phone": "",
+  "card": "",
+  "date": ""
+}</pre>
+    </div>
+  </div>
+
+  <script>
+    const state = { phone: '', card: '', date: '' };
+    const rawPre = document.getElementById('rawValues');
+
+    function updateState(key, val) {
+      state[key] = val;
+      rawPre.textContent = JSON.stringify(state, null, 2);
+    }
+
+    function applyMask(id, pattern, key) {
+      const input = document.getElementById(id);
+      input.addEventListener('input', (e) => {
+        let val = e.target.value.replace(/\D/g, '');
+        updateState(key, val);
+        
+        let masked = '';
+        let valIdx = 0;
+        
+        for (let i = 0; i < pattern.length && valIdx < val.length; i++) {
+          if (pattern[i] === '9') {
+            masked += val[valIdx++];
+          } else {
+            masked += pattern[i];
+          }
+        }
+        e.target.value = masked;
+      });
+    }
+
+    applyMask('phoneMask', '(999) 999-9999', 'phone');
+    applyMask('cardMask', '9999 9999 9999 9999', 'card');
+    applyMask('dateMask', '99 / 99 / 9999', 'date');
+  </script>
+</body>
+</html>

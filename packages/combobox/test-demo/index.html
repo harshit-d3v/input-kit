@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Combobox Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      padding: 3rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #4facfe; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+    .combobox {
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    .combobox-input {
+      width: 100%;
+      padding: 1.25rem 3rem 1.25rem 1.25rem;
+      font-size: 1.125rem;
+      border: 3px solid #e9ecef;
+      border-radius: 16px;
+      outline: none;
+      transition: all 0.3s;
+    }
+    .combobox-input:focus {
+      border-color: #4facfe;
+      box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.1);
+    }
+    .combobox-arrow {
+      position: absolute;
+      right: 1.25rem;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      font-size: 1.25rem;
+      color: #6c757d;
+    }
+    .dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      margin-top: 0.5rem;
+      background: white;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      z-index: 1000;
+    }
+    .dropdown.show {
+      display: block;
+    }
+    .dropdown-item {
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid #f8f9fa;
+    }
+    .dropdown-item:last-child {
+      border-bottom: none;
+    }
+    .dropdown-item:hover {
+      background: #f8f9fa;
+    }
+    .dropdown-item.selected {
+      background: linear-gradient(135deg, #4facfe10 0%, #00f2fe10 100%);
+      font-weight: 600;
+      color: #4facfe;
+    }
+    .selected-value {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: #f8f9fa;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .selected-label {
+      font-size: 0.875rem;
+      color: #6c757d;
+      margin-bottom: 0.5rem;
+    }
+    .selected-text {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #4facfe;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="#4facfe" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="vertical-align:middle;margin-right:10px">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+      Combobox
+    </h1>
+    <p class="subtitle">Searchable dropdown with 30+ countries</p>
+    
+    <div class="combobox">
+      <input 
+        type="text"
+        class="combobox-input"
+        id="comboInput"
+        placeholder="Search countries..."
+        autocomplete="off"
+      >
+      <span class="combobox-arrow" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </span>
+      <div class="dropdown" id="dropdown"></div>
+    </div>
+
+    <div class="selected-value">
+      <div class="selected-label">Selected Country:</div>
+      <div class="selected-text" id="selectedValue">None</div>
+    </div>
+  </div>
+
+  <script>
+    const countries = [
+      'Afghanistan', 'Albania', 'Algeria', 'Argentina', 'Australia',
+      'Austria', 'Bangladesh', 'Belgium', 'Brazil', 'Canada',
+      'China', 'Colombia', 'Denmark', 'Egypt', 'Finland',
+      'France', 'Germany', 'Greece', 'India', 'Indonesia',
+      'Ireland', 'Italy', 'Japan', 'Mexico', 'Netherlands',
+      'New Zealand', 'Norway', 'Pakistan', 'Poland', 'Portugal',
+      'Russia', 'South Africa', 'South Korea', 'Spain', 'Sweden',
+      'Switzerland', 'Thailand', 'Turkey', 'United Kingdom', 'United States'
+    ];
+
+    const comboInput = document.getElementById('comboInput');
+    const dropdown = document.getElementById('dropdown');
+    const selectedValue = document.getElementById('selectedValue');
+    let selectedCountry = null;
+
+    function renderDropdown(items) {
+      // Build DOM nodes to avoid innerHTML XSS when data comes from external sources.
+      const fragment = document.createDocumentFragment();
+      items.forEach(country => {
+        const div = document.createElement('div');
+        div.className = 'dropdown-item' + (country === selectedCountry ? ' selected' : '');
+        div.textContent = country;
+        div.addEventListener('click', () => {
+          selectedCountry = country;
+          comboInput.value = country;
+          selectedValue.textContent = country;
+          dropdown.classList.remove('show');
+        });
+        fragment.appendChild(div);
+      });
+      dropdown.innerHTML = '';
+      dropdown.appendChild(fragment);
+    }
+
+    comboInput.addEventListener('focus', () => {
+      const searchTerm = comboInput.value.toLowerCase();
+      const filtered = countries.filter(c => c.toLowerCase().includes(searchTerm));
+      renderDropdown(filtered);
+      dropdown.classList.add('show');
+    });
+
+    comboInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase();
+      const filtered = countries.filter(c => c.toLowerCase().includes(searchTerm));
+      renderDropdown(filtered);
+      dropdown.classList.add('show');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.combobox')) {
+        dropdown.classList.remove('show');
+      }
+    });
+
+    renderDropdown(countries);
+  </script>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON Viewer Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Consolas', 'Monaco', monospace;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #1e3c72; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; font-family: system-ui; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; font-family: system-ui; }
+    .json-container {
+      background: #282c34;
+      color: #abb2bf;
+      padding: 1.5rem;
+      border-radius: 12px;
+      max-height: 600px;
+      overflow: auto;
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+    .json-key {
+      color: #e06c75;
+      font-weight: bold;
+    }
+    .json-string {
+      color: #98c379;
+    }
+    .json-number {
+      color: #d19a66;
+    }
+    .json-boolean {
+      color: #56b6c2;
+    }
+    .json-null {
+      color: #c678dd;
+    }
+    .json-expandable {
+      cursor: pointer;
+      user-select: none;
+    }
+    .json-toggle {
+      display: inline-block;
+      width: 16px;
+      text-align: center;
+      margin-right: 4px;
+      color: #61afef;
+      font-weight: bold;
+    }
+    .json-collapsed {
+      color: #5c6370;
+    }
+    .json-line {
+      padding-left: 20px;
+    }
+    .json-line.hidden {
+      display: none;
+    }
+    .controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      justify-content: center;
+    }
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      font-family: system-ui;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>JSON Viewer
+    </h1>
+    <p class="subtitle">Expandable JSON tree with syntax highlighting • 100+ nodes</p>
+    
+    <div class="controls">
+      <button class="btn" onclick="expandAll()">Expand All</button>
+      <button class="btn" onclick="collapseAll()">Collapse All</button>
+    </div>
+
+    <div class="json-container" id="jsonContainer"></div>
+  </div>
+
+  <script>
+    const container = document.getElementById('jsonContainer');
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+    const sampleData = {
+      user: {
+        id: 12345,
+        name: "John Doe",
+        email: "john.doe@example.com",
+        isActive: true,
+        role: "admin",
+        preferences: {
+          theme: "dark",
+          notifications: true,
+          language: "en-US",
+          timezone: "America/New_York"
+        },
+        profile: {
+          avatar: "https://example.com/avatar.jpg",
+          bio: "Full-stack developer passionate about clean code",
+          website: "https://johndoe.dev",
+          social: {
+            twitter: "@johndoe",
+            github: "johndoe",
+            linkedin: "john-doe"
+          }
+        }
+      },
+      posts: [
+        {
+          id: 1,
+          title: "Getting Started with JSON",
+          content: "JSON is a lightweight data format...",
+          published: true,
+          views: 1523,
+          tags: ["json", "tutorial", "basics"],
+          author: {
+            name: "John Doe",
+            id: 12345
+          }
+        },
+        {
+          id: 2,
+          title: "Advanced JavaScript Techniques",
+          content: "Learn about closures, promises...",
+          published: true,
+          views: 3891,
+          tags: ["javascript", "advanced", "es6"],
+          author: {
+            name: "John Doe",
+            id: 12345
+          }
+        },
+        {
+          id: 3,
+          title: "Building RESTful APIs",
+          content: "Best practices for API design...",
+          published: false,
+          views: 0,
+          tags: ["api", "rest", "backend"],
+          author: {
+            name: "John Doe",
+            id: 12345
+          }
+        }
+      ],
+      stats: {
+        totalPosts: 3,
+        totalViews: 5414,
+        followers: 847,
+        following: 312,
+        averageRating: 4.7
+      },
+      settings: {
+        privacy: {
+          profileVisible: true,
+          emailVisible: false,
+          showOnlineStatus: true
+        },
+        security: {
+          twoFactorAuth: true,
+          loginAlerts: true,
+          sessionTimeout: 3600
+        }
+      },
+      metadata: {
+        createdAt: "2021-03-15T10:30:00Z",
+        updatedAt: "2024-01-20T14:45:00Z",
+        version: "2.1.0",
+        lastLogin: "2024-01-29T09:15:00Z"
+      }
+    };
+
+    let expandedPaths = new Set();
+
+    function formatValue(value) {
+      if (value === null) {
+        return `<span class="json-null">null</span>`;
+      }
+      if (typeof value === 'boolean') {
+        return `<span class="json-boolean">${value}</span>`;
+      }
+      if (typeof value === 'number') {
+        return `<span class="json-number">${value}</span>`;
+      }
+      if (typeof value === 'string') {
+        return `<span class="json-string">"${escapeHtml(value)}"</span>`;
+      }
+      return value;
+    }
+
+    function renderJSON(obj, indent = 0, path = '') {
+      let html = '';
+      const isArray = Array.isArray(obj);
+      const entries = isArray ? obj : Object.entries(obj);
+      
+      entries.forEach((item, index) => {
+        const [key, value] = isArray ? [index, item] : item;
+        const currentPath = path ? `${path}.${key}` : key;
+        const isExpandable = typeof value === 'object' && value !== null;
+        const isExpanded = expandedPaths.has(currentPath);
+        
+        html += `<div class="json-line" style="padding-left: ${indent * 20}px">`;
+        
+        if (isExpandable) {
+          html += `<span class="json-toggle json-expandable" data-path="${escapeAttribute(currentPath)}">${isExpanded ? '▼' : '▶'}</span>`;
+        } else {
+          html += `<span class="json-toggle"></span>`;
+        }
+        
+        if (!isArray) {
+          html += `<span class="json-key">"${escapeHtml(key)}"</span>: `;
+        }
+        
+        if (isExpandable) {
+          const preview = isArray ? `Array(${value.length})` : 'Object';
+          html += `<span class="${isExpanded ? '' : 'json-collapsed'}">${isArray ? '[' : '{'} ${!isExpanded ? preview : ''}</span>`;
+        } else {
+          html += formatValue(value, currentPath);
+          html += index < entries.length - 1 ? ',' : '';
+        }
+        
+        html += '</div>';
+        
+        if (isExpandable && isExpanded) {
+          html += renderJSON(value, indent + 1, currentPath);
+          html += `<div class="json-line" style="padding-left: ${indent * 20}px">`;
+          html += `<span class="json-toggle"></span>${isArray ? ']' : '}'}${index < entries.length - 1 ? ',' : ''}`;
+          html += '</div>';
+        }
+      });
+      
+      return html;
+    }
+
+    function toggleExpand(path) {
+      if (expandedPaths.has(path)) {
+        expandedPaths.delete(path);
+      } else {
+        expandedPaths.add(path);
+      }
+      render();
+    }
+
+    function expandAll() {
+      function addAllPaths(obj, path = '') {
+        Object.entries(obj).forEach(([key, value]) => {
+          const currentPath = path ? `${path}.${key}` : key;
+          if (typeof value === 'object' && value !== null) {
+            expandedPaths.add(currentPath);
+            addAllPaths(value, currentPath);
+          }
+        });
+      }
+      expandedPaths.clear();
+      addAllPaths(sampleData);
+      render();
+    }
+
+    function collapseAll() {
+      expandedPaths.clear();
+      render();
+    }
+
+    function render() {
+      container.innerHTML = '<div>{</div>' + renderJSON(sampleData, 1) + '<div>}</div>';
+    }
+
+    container.addEventListener('click', (event) => {
+      const toggle = event.target.closest('.json-expandable');
+      if (toggle && toggle.dataset.path) {
+        toggleExpand(toggle.dataset.path);
+      }
+    });
+
+    // Initial render with some items expanded
+    expandedPaths.add('user');
+    expandedPaths.add('posts');
+    render();
+  </script>
+</body>
+</html>

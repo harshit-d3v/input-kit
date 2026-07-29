@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/paste Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #475569);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #fff;
+      padding: 60px;
+      border-radius: 40px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    .paste-zone {
+      border: 4px dashed #e2e8f0;
+      background: #f8fafc;
+      padding: 80px 40px;
+      border-radius: 32px;
+      text-align: center;
+      cursor: text;
+      transition: all 0.3s;
+      margin-bottom: 40px;
+      position: relative;
+    }
+    .paste-zone:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: #f0f7ff;
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0.05);
+    }
+    .icon {
+      width: 72px;
+      height: 72px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #475569;
+      margin-bottom: 25px;
+    }
+    .main-text { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-bottom: 10px; }
+    .hint { color: #94a3b8; font-weight: 500; }
+    
+    .results-panel {
+      background: #1e293b;
+      padding: 30px;
+      border-radius: 24px;
+      color: #38bdf8;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #334155;
+    }
+    .entry {
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #334155;
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } }
+    
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+    .type-badge {
+      background: #334155;
+      color: #cbd5e1;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .entry-content {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      word-break: break-all;
+    }
+    .img-preview {
+      max-width: 100%;
+      border-radius: 12px;
+      border: 4px solid #334155;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2Z"/><path d="M9 3h6v4H9z"/></svg> Paste Studio</h1>
+    
+    <div class="paste-zone" id="zone" contenteditable="true">
+      <span class="icon" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></span>
+      <p class="main-text">Click & Press Ctrl+V</p>
+      <p class="hint">Supports plain text, rich HTML, and image data</p>
+    </div>
+
+    <div class="results-panel" id="results">
+      <div style="text-align: center; opacity: 0.4; padding: 40px;">
+        <em>Waiting for clipboard content...</em>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const zone = document.getElementById('zone');
+    const res = document.getElementById('results');
+
+    function clearResults() {
+      res.replaceChildren();
+    }
+
+    function createEntry(type) {
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+
+      const header = document.createElement('div');
+      header.className = 'entry-header';
+
+      const badge = document.createElement('span');
+      badge.className = 'type-badge';
+      badge.textContent = type;
+
+      header.appendChild(badge);
+      entry.appendChild(header);
+
+      return entry;
+    }
+
+    function appendTextEntry(type, text) {
+      const entry = createEntry(type);
+      const content = document.createElement('div');
+      content.className = 'entry-content';
+      content.textContent = text.length > 500 ? `${text.slice(0, 500)}...` : text;
+      entry.appendChild(content);
+      res.appendChild(entry);
+    }
+
+    function appendImageEntry(type, file) {
+      const entry = createEntry(type);
+      const image = document.createElement('img');
+      image.className = 'img-preview';
+      image.alt = type;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (typeof event.target?.result === 'string') {
+          image.src = event.target.result;
+        }
+      };
+
+      reader.readAsDataURL(file);
+      entry.appendChild(image);
+      res.appendChild(entry);
+    }
+
+    zone.addEventListener('paste', e => {
+      e.preventDefault();
+
+      clearResults();
+
+      const clipboardData = e.clipboardData;
+      if (!clipboardData) {
+        return;
+      }
+
+      const items = Array.from(clipboardData.items);
+      if (items.length === 0) {
+        appendTextEntry('empty', 'Clipboard did not contain any readable items.');
+        return;
+      }
+
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            appendImageEntry(item.type, file);
+          }
+          continue;
+        }
+
+        item.getAsString((text) => {
+          appendTextEntry(item.type || 'text/plain', text);
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tooltip Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      padding: 3rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #43e97b; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 3rem; }
+    .demo-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+    .demo-box {
+      padding: 3rem 2rem;
+      background: #f8f9fa;
+      border-radius: 16px;
+      text-align: center;
+    }
+    .tooltip-trigger {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      color: white;
+      border-radius: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .tooltip-trigger:hover {
+      transform: translateY(-2px);
+    }
+    .tooltip {
+      position: absolute;
+      background: #212529;
+      color: white;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 1000;
+      white-space: nowrap;
+    }
+    .tooltip.show {
+      opacity: 1;
+    }
+    .tooltip::before {
+      content: '';
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-style: solid;
+    }
+    .tooltip.top::before {
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 6px 6px 0 6px;
+      border-color: #212529 transparent transparent transparent;
+    }
+    .tooltip.bottom::before {
+      top: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 0 6px 6px 6px;
+      border-color: transparent transparent #212529 transparent;
+    }
+    .tooltip.left::before {
+      right: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px 0 6px 6px;
+      border-color: transparent transparent transparent #212529;
+    }
+    .tooltip.right::before {
+      left: -6px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-width: 6px 6px 6px 0;
+      border-color: transparent #212529 transparent transparent;
+    }
+    .label {
+      font-size: 0.875rem;
+      color: #6c757d;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+    .center-demo {
+      text-align: center;
+      padding: 2rem;
+      background: #f8f9fa;
+      border-radius: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💬 Tooltips</h1>
+    <p class="subtitle">Hover over buttons to see tooltips in different positions</p>
+    
+    <div class="demo-grid">
+      <div class="demo-box">
+        <div class="label">TOP TOOLTIP</div>
+        <div class="tooltip-trigger" data-tooltip="This tooltip appears on top!" data-position="top">
+          Hover Me
+        </div>
+      </div>
+
+      <div class="demo-box">
+        <div class="label">BOTTOM TOOLTIP</div>
+        <div class="tooltip-trigger" data-tooltip="This tooltip appears below!" data-position="bottom">
+          Hover Me
+        </div>
+      </div>
+
+      <div class="demo-box">
+        <div class="label">LEFT TOOLTIP</div>
+        <div class="tooltip-trigger" data-tooltip="Tooltip on the left!" data-position="left">
+          Hover Me
+        </div>
+      </div>
+
+      <div class="demo-box">
+        <div class="label">RIGHT TOOLTIP</div>
+        <div class="tooltip-trigger" data-tooltip="Tooltip on the right!" data-position="right">
+          Hover Me
+        </div>
+      </div>
+    </div>
+
+    <div class="center-demo">
+      <div class="tooltip-trigger" data-tooltip="Save your changes to the database" data-position="top" style="margin: 0 1rem;">
+        💾 Save
+      </div>
+      <div class="tooltip-trigger" data-tooltip="Download files to your computer" data-position="top" style="margin: 0 1rem;">
+        📥 Download
+      </div>
+      <div class="tooltip-trigger" data-tooltip="Share with your team members" data-position="top" style="margin: 0 1rem;">
+        📤 Share
+      </div>
+    </div>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const triggers = document.querySelectorAll('.tooltip-trigger');
+    const tooltip = document.getElementById('tooltip');
+
+    triggers.forEach(trigger => {
+      trigger.addEventListener('mouseenter', (e) => {
+        const text = trigger.getAttribute('data-tooltip');
+        const position = trigger.getAttribute('data-position');
+        
+        tooltip.textContent = text;
+        tooltip.className = `tooltip ${position}`;
+        
+        const rect = trigger.getBoundingClientRect();
+        
+        let top, left;
+        
+        if (position === 'top') {
+          top = rect.top - tooltip.offsetHeight - 10;
+          left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+        } else if (position === 'bottom') {
+          top = rect.bottom + 10;
+          left = rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2);
+        } else if (position === 'left') {
+          top = rect.top + (rect.height / 2) - (tooltip.offsetHeight / 2);
+          left = rect.left - tooltip.offsetWidth - 10;
+        } else if (position === 'right') {
+          top = rect.top + (rect.height / 2) - (tooltip.offsetHeight / 2);
+          left = rect.right + 10;
+        }
+        
+        tooltip.style.top = top + window.scrollY + 'px';
+        tooltip.style.left = left + window.scrollX + 'px';
+        
+        setTimeout(() => tooltip.classList.add('show'), 10);
+      });
+
+      trigger.addEventListener('mouseleave', () => {
+        tooltip.classList.remove('show');
+      });
+    });
+  </script>
+</body>
+</html>

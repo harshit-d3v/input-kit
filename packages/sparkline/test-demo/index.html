@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/sparkline Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #ec4899, #be123c);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 40px;
+      border-radius: 32px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #1e293b;
+      margin-bottom: 40px;
+      font-size: 2.5rem;
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 25px;
+    }
+    .stat-card {
+      padding: 24px;
+      background: #f8fafc;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+      border-color: #ec4899;
+    }
+    .label {
+      font-size: 0.9rem;
+      color: #64748b;
+      font-weight: 600;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .value {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #1e293b;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+    }
+    .trend {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .trend.up { color: #10b981; }
+    .trend.down { color: #ef4444; }
+    
+    .sparkline-box {
+      margin-top: 20px;
+      height: 60px;
+      width: 100%;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .tooltip {
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      text-align: center;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📈 Live Sparklines</h1>
+    
+    <div class="grid">
+      <div class="stat-card">
+        <div class="label">Revenue</div>
+        <div class="value">
+          $12,480
+          <span class="trend up">↑ 14%</span>
+        </div>
+        <div class="sparkline-box">
+          <svg id="spark1"></svg>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="label">Active Users</div>
+        <div class="value">
+          2,842
+          <span class="trend up">↑ 8%</span>
+        </div>
+        <div class="sparkline-box">
+          <svg id="spark2"></svg>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="label">Bounce Rate</div>
+        <div class="value">
+          32.1%
+          <span class="trend down">↓ 4%</span>
+        </div>
+        <div class="sparkline-box">
+          <svg id="spark3"></svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="tooltip">💡 Charts update with real random data every 2 seconds</p>
+  </div>
+
+  <script>
+    function drawSparkline(id, data, color) {
+      const svg = document.getElementById(id);
+      const width = svg.clientWidth;
+      const height = 60;
+      const max = Math.max(...data);
+      const min = Math.min(...data);
+      const range = max - min || 1;
+      
+      const points = data.map((d, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((d - min) / range) * (height - 10) - 5;
+        return `${x},${y}`;
+      }).join(' ');
+
+      svg.innerHTML = `
+        <polyline points="${points}" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        <circle cx="${(data.length-1)/(data.length-1)*width}" cy="${height - ((data[data.length-1] - min) / range) * (height - 10) - 5}" r="4" fill="${color}" />
+      `;
+    }
+
+    const series = {
+      s1: [30, 40, 35, 50, 48, 60, 55, 70],
+      s2: [100, 95, 110, 105, 120, 115, 130, 125],
+      s3: [45, 42, 40, 38, 35, 36, 32, 30]
+    };
+
+    function update() {
+      Object.keys(series).forEach(k => {
+        series[k].shift();
+        const last = series[k][series[k].length - 1];
+        const next = last + (Math.random() - 0.5) * 20;
+        series[k].push(next);
+      });
+      
+      drawSparkline('spark1', series.s1, '#ec4899');
+      drawSparkline('spark2', series.s2, '#3b82f6');
+      drawSparkline('spark3', series.s3, '#10b981');
+    }
+
+    setInterval(update, 2000);
+    window.onload = update;
+  </script>
+</body>
+</html>

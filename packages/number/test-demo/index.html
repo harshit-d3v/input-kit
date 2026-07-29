@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/number Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: #fff;
+      padding: 50px;
+      border-radius: 32px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 {
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 40px;
+    }
+    
+    .number-input-container {
+      display: flex;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 10px;
+      border-radius: 20px;
+      margin-bottom: 30px;
+      border: 2px solid #e2e8f0;
+      transition: all 0.3s;
+    }
+    .number-input-container:focus-within {
+      border-color: #6366f1;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+    }
+    
+    input {
+      flex: 1;
+      background: none;
+      border: none;
+      text-align: center;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #1e293b;
+      outline: none;
+      width: 100px;
+    }
+    
+    .btn-circle {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #6366f1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .btn-circle:hover {
+      background: #6366f1;
+      color: #fff;
+      transform: scale(1.1);
+    }
+    
+    .label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    .stat-card {
+      background: #f8fafc;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 0.8rem;
+    }
+    .stat-val {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #6366f1;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><path d="M4 10h16"/><path d="M4 14h16"/><path d="M9 6v12"/><path d="M15 6v12"/></svg>Smart Number
+    </h1>
+    
+    <div class="label">Adjust Quantity</div>
+    
+    <div class="number-input-container">
+      <button class="btn-circle" onclick="change(-1)">−</button>
+      <input type="text" id="num" value="10" readonly>
+      <button class="btn-circle" onclick="change(1)">+</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat-card">
+        Min Limit
+        <span class="stat-val">0</span>
+      </div>
+      <div class="stat-card">
+        Max Limit
+        <span class="stat-val">100</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const input = document.getElementById('num');
+    function change(delta) {
+      let val = parseInt(input.value);
+      val = Math.max(0, Math.min(100, val + delta));
+      input.value = val;
+      
+      // Animation
+      input.style.transform = 'scale(1.2)';
+      setTimeout(() => input.style.transform = 'scale(1)', 100);
+    }
+  </script>
+</body>
+</html>

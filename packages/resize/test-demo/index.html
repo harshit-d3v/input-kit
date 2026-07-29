@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/resize Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px;
+    }
+    .container {
+      max-width: 800px;
+      width: 100%;
+      background: #fff;
+      padding: 60px;
+      border-radius: 40px;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.3);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 50px;
+      color: #1e293b;
+      font-size: 2.5rem;
+      font-weight: 900;
+      letter-spacing: -1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+    
+    .demo-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 50px;
+    }
+    
+    .resizable-target {
+      width: 350px;
+      height: 250px;
+      background: #f8fafc;
+      border: 4px solid #6366f1;
+      border-radius: 24px;
+      resize: both;
+      overflow: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 200px;
+      min-height: 150px;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.1);
+    }
+    .resizable-target::after {
+      content: '↘';
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 2rem;
+      color: #6366f1;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+    
+    .metrics-container {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      width: 100%;
+    }
+    .metric-card {
+      padding: 25px;
+      background: #f8fafc;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+      text-align: center;
+      transition: all 0.3s;
+    }
+    .metric-card.active { border-color: #6366f1; background: #f5f3ff; }
+    
+    .metric-label { font-size: 0.75rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; }
+    .metric-val { font-size: 2.2rem; font-weight: 900; color: #1e293b; font-family: 'JetBrains Mono', monospace; }
+    .px { font-size: 0.8rem; color: #6366f1; font-weight: 700; margin-left: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1><svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 3 21"/><path d="M15 3h6v6"/><path d="M9 21H3v-6"/></svg> Resize Engine</h1>
+    
+    <div class="demo-area">
+      <div class="resizable-target" id="target">
+        <div style="text-align: center;">
+          <div style="display: flex; justify-content: center; margin-bottom: 10px; color: #4f46e5;"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21 16-9 5-9-5"/><path d="m21 8-9 5-9-5"/><path d="m3 8 9-5 9 5"/><path d="m12 13 9-5"/><path d="M12 13 3 8"/><path d="v8"/></svg></div>
+          <p style="font-weight: 700; color: #64748b;">Resize Me</p>
+        </div>
+      </div>
+
+      <div class="metrics-container">
+        <div class="metric-card" id="wc">
+          <div class="metric-label">Width</div>
+          <div class="metric-val"><span id="w">350</span><span class="px">px</span></div>
+        </div>
+        <div class="metric-card" id="hc">
+          <div class="metric-label">Height</div>
+          <div class="metric-val"><span id="h">250</span><span class="px">px</span></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Ratio</div>
+          <div class="metric-val" id="ratio" style="font-size: 1.5rem">1.40</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const target = document.getElementById('target');
+    const wText = document.getElementById('w');
+    const hText = document.getElementById('h');
+    const rText = document.getElementById('ratio');
+    
+    const wc = document.getElementById('wc');
+    const hc = document.getElementById('hc');
+
+    let prevW = 350;
+    let prevH = 250;
+    let widthFlashTimeout;
+    let heightFlashTimeout;
+
+    const observer = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        const h = Math.round(entry.contentRect.height);
+        
+        wText.textContent = w;
+        hText.textContent = h;
+        rText.textContent = h === 0 ? '∞' : (w / h).toFixed(2);
+
+        if (w !== prevW) {
+          wc.classList.add('active');
+          clearTimeout(widthFlashTimeout);
+          widthFlashTimeout = setTimeout(() => wc.classList.remove('active'), 200);
+        }
+
+        if (h !== prevH) {
+          hc.classList.add('active');
+          clearTimeout(heightFlashTimeout);
+          heightFlashTimeout = setTimeout(() => hc.classList.remove('active'), 200);
+        }
+        
+        prevW = w; prevH = h;
+      }
+    });
+
+    observer.observe(target);
+  </script>
+</body>
+</html>

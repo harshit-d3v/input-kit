@@ -1,0 +1,70 @@
+{
+  "name": "@input-kit/chart",
+  "version": "0.1.0",
+  "description": "Chart components",
+  "keywords": [
+    "react",
+    "input-kit",
+    "chart",
+    "typescript",
+    "headless"
+  ],
+  "license": "MIT",
+  "author": "Harshit Prakash <immanasjohri@gmail.com> (https://github.com/harshit-d3v)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harshit-d3v/input-kit.git",
+    "directory": "packages/chart"
+  },
+  "homepage": "https://github.com/harshit-d3v/input-kit/tree/main/packages/chart#readme",
+  "bugs": {
+    "url": "https://github.com/harshit-d3v/input-kit/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "jsdom": "^26.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  }
+}

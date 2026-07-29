@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/gauge Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #fff;
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    h1 {
+      margin-bottom: 40px;
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gauges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 30px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 30px;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+    .card:hover {
+      transform: translateY(-5px);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .gauge-container {
+      width: 200px;
+      height: 100px;
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto 20px;
+    }
+    .gauge-bg {
+      width: 200px;
+      height: 200px;
+      border: 20px solid rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+      border-bottom-color: transparent;
+      border-left-color: transparent;
+      transform: rotate(-45deg);
+    }
+    .gauge-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 200px;
+      height: 200px;
+      border: 20px solid #3b82f6;
+      border-radius: 50%;
+      border-bottom-color: transparent;
+      border-left-color: transparent;
+      transform: rotate(-45deg);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gauge-value {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .label {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      appearance: none;
+      outline: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #3b82f6;
+      border-radius: 50%;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+  <h1>
+    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><path d="M12 3v4"/><path d="M18.4 5.6 16 8"/><path d="M21 12h-4"/><path d="m18.4 18.4-2.4-2.4"/><path d="M12 21v-4"/><path d="m5.6 18.4 2.4-2.4"/><path d="M7 12H3"/><path d="m5.6 5.6 2.4 2.4"/><path d="M12 12 16 8"/></svg>Dashboard Gauges
+  </h1>
+  
+  <div class="gauges-grid">
+    <div class="card">
+      <div class="label">System CPU</div>
+      <div class="gauge-container">
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="cpuFill" style="border-color: #3b82f6"></div>
+        <div class="gauge-value" id="cpuVal">0%</div>
+      </div>
+      <input type="range" min="0" max="100" value="42" oninput="updateGauge('cpu', this.value, '#3b82f6')">
+      <div class="stats"><span>Min: 0%</span><span>Max: 100%</span></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Memory Load</div>
+      <div class="gauge-container">
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="memFill" style="border-color: #10b981"></div>
+        <div class="gauge-value" id="memVal">0%</div>
+      </div>
+      <input type="range" min="0" max="100" value="65" oninput="updateGauge('mem', this.value, '#10b981')">
+      <div class="stats"><span>Min: 0%</span><span>Max: 100%</span></div>
+    </div>
+
+    <div class="card">
+      <div class="label">Disk Usage</div>
+      <div class="gauge-container">
+        <div class="gauge-bg"></div>
+        <div class="gauge-fill" id="diskFill" style="border-color: #f59e0b"></div>
+        <div class="gauge-value" id="diskVal">0%</div>
+      </div>
+      <input type="range" min="0" max="100" value="88" oninput="updateGauge('disk', this.value, '#f59e0b')">
+      <div class="stats"><span>Min: 0%</span><span>Max: 100%</span></div>
+    </div>
+  </div>
+
+  <script>
+    function updateGauge(id, val, color) {
+      const fill = document.getElementById(id + 'Fill');
+      const text = document.getElementById(id + 'Val');
+      const value = Number(val) || 0;
+      
+      const deg = -45 + (value * 1.8);
+      fill.style.transform = `rotate(${deg}deg)`;
+      text.textContent = value + '%';
+      
+      let currentColor = color;
+      if (value > 85) currentColor = '#ef4444';
+      else if (value > 65) currentColor = '#f59e0b';
+      
+      fill.style.borderTopColor = currentColor;
+      fill.style.borderRightColor = currentColor;
+    }
+
+    // Initialize
+    window.onload = () => {
+      updateGauge('cpu', 42, '#3b82f6');
+      updateGauge('mem', 65, '#10b981');
+      updateGauge('disk', 88, '#f59e0b');
+    };
+  </script>
+</body>
+</html>

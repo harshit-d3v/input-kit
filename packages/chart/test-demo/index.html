@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/chart Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #10b981, #059669);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      background: #fff;
+      padding: 50px;
+      border-radius: 32px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.2);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+    h1 {
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      background: #f1f5f9;
+      padding: 6px;
+      border-radius: 12px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      background: none;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn.active {
+      background: #fff;
+      color: #10b981;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    
+    .chart-box {
+      height: 400px;
+      width: 100%;
+      background: #f8fafc;
+      border-radius: 20px;
+      padding: 30px;
+      position: relative;
+    }
+    canvas { width: 100% !important; height: 100% !important; }
+    
+    .legend {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📊 Analytics Dashboard</h1>
+      <div class="controls">
+        <button class="btn active" onclick="setType('bar', this)">Bar</button>
+        <button class="btn" onclick="setType('line', this)">Line</button>
+        <button class="btn" onclick="setType('pie', this)">Pie</button>
+      </div>
+    </header>
+
+    <div class="chart-box">
+      <canvas id="mainChart"></canvas>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="dot" style="background: #10b981"></span> Desktop</div>
+      <div class="legend-item"><span class="dot" style="background: #3b82f6"></span> Mobile</div>
+      <div class="legend-item"><span class="dot" style="background: #f59e0b"></span> Tablet</div>
+    </div>
+  </div>
+
+  <script>
+    const data = [
+      { label: 'Mon', desktop: 45, mobile: 32, tablet: 12 },
+      { label: 'Tue', desktop: 52, mobile: 45, tablet: 15 },
+      { label: 'Wed', desktop: 48, mobile: 62, tablet: 10 },
+      { label: 'Thu', desktop: 70, mobile: 55, tablet: 20 },
+      { label: 'Fri', desktop: 65, mobile: 40, tablet: 18 },
+      { label: 'Sat', desktop: 40, mobile: 30, tablet: 8 },
+      { label: 'Sun', desktop: 35, mobile: 25, tablet: 5 }
+    ];
+
+    let currentType = 'bar';
+
+    function setType(type, el) {
+      currentType = type;
+      document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      draw();
+    }
+
+    function draw() {
+      const canvas = document.getElementById('mainChart');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (currentType === 'bar') drawBar(ctx, canvas);
+      else if (currentType === 'line') drawLine(ctx, canvas);
+      else if (currentType === 'pie') drawPie(ctx, canvas);
+    }
+
+    function drawBar(ctx, canvas) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const barW = (w - 100) / data.length;
+      const max = 100;
+
+      data.forEach((d, i) => {
+        const x = 50 + i * barW;
+        const totalH = (d.desktop + d.mobile + d.tablet);
+        
+        // Desktop
+        const h1 = (d.desktop / max) * (h - 50);
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(x + 10, h - h1 - 30, barW - 20, h1);
+        
+        // Text
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.label, x + barW/2, h - 10);
+      });
+    }
+
+    function drawLine(ctx, canvas) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const step = (w - 100) / (data.length - 1);
+      const max = 100;
+
+      ctx.beginPath();
+      ctx.strokeStyle = '#10b981';
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+
+      data.forEach((d, i) => {
+        const x = 50 + i * step;
+        const y = h - (d.desktop / max) * (h - 100) - 50;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Dots
+      data.forEach((d, i) => {
+        const x = 50 + i * step;
+        const y = h - (d.desktop / max) * (h - 100) - 50;
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(x, y, 6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
+
+    function drawPie(ctx, canvas) {
+      const center = { x: canvas.width/2, y: canvas.height/2 };
+      const radius = 120;
+      const total = data.reduce((acc, curr) => acc + curr.desktop, 0);
+      let startAngle = -Math.PI/2;
+
+      data.forEach((d, i) => {
+        const sliceAngle = (d.desktop / total) * Math.PI * 2;
+        const hue = 140 + (i * 20);
+        ctx.fillStyle = `hsl(${hue}, 70%, 50%)`;
+        
+        ctx.beginPath();
+        ctx.moveTo(center.x, center.y);
+        ctx.arc(center.x, center.y, radius, startAngle, startAngle + sliceAngle);
+        ctx.closePath();
+        ctx.fill();
+        
+        startAngle += sliceAngle;
+      });
+    }
+
+    window.onresize = draw;
+    setTimeout(draw, 100);
+  </script>
+</body>
+</html>

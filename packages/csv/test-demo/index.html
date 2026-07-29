@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/csv Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #475569);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 60px;
+      border-radius: 32px;
+      box-shadow: 0 50px 100px rgba(0,0,0,0.5);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+    .input-section {
+      background: #f8fafc;
+      padding: 30px;
+      border-radius: 24px;
+      border: 1px solid #e2e8f0;
+    }
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #fff;
+      border: 2px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      color: #334155;
+      resize: none;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #3b82f6; }
+    
+    .table-container {
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { background: #f8fafc; padding: 18px 20px; font-weight: 800; color: #64748b; font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; }
+    td { padding: 18px 20px; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; color: #1e293b; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fbfbfb; }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #e0f2fe;
+      color: #0369a1;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>CSV Processing Kit
+    </h1>
+    
+    <div class="main-grid">
+      <div class="input-section">
+        <div class="section-title">Raw CSV Input</div>
+        <textarea id="csvInput" oninput="parse()">ID,Product Name,Category,Price,Status
+P001,MacBook Air,Laptops,$999.00,In Stock
+P002,Sony WH-1000XM5,Audio,$349.99,In Stock
+P003,iPhone 15 Pro,Phones,$1099.00,Pre-Order
+P004,Logitech MX Master,Peripherals,$99.00,Out of Stock</textarea>
+      </div>
+
+      <div class="table-section">
+        <div class="section-title">Live Preview Table</div>
+        <div class="table-container">
+          <table id="table">
+            <thead id="thead"></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function parse() {
+      const text = document.getElementById('csvInput').value;
+      const lines = text.split('\n');
+      const head = document.getElementById('thead');
+      const body = document.getElementById('tbody');
+      
+      head.innerHTML = '';
+      body.innerHTML = '';
+
+      if (lines.length > 0 && lines[0].trim()) {
+        const headers = lines[0].split(',');
+        const hRow = document.createElement('tr');
+        headers.forEach(h => {
+          const th = document.createElement('th');
+          th.textContent = h.trim();
+          hRow.appendChild(th);
+        });
+        head.appendChild(hRow);
+
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          
+          const tr = document.createElement('tr');
+          const cells = line.split(',');
+          cells.forEach((c, idx) => {
+            const td = document.createElement('td');
+            if (idx === 4) { // Status column
+              const badge = document.createElement('span');
+              badge.className = 'badge';
+              badge.textContent = c.trim();
+              td.appendChild(badge);
+            } else {
+              td.textContent = c.trim();
+            }
+            tr.appendChild(td);
+          });
+          body.appendChild(tr);
+        }
+      }
+    }
+    window.onload = parse;
+  </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/pin Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .auth-card {
+      max-width: 420px;
+      width: 100%;
+      background: #fff;
+      padding: 60px 40px;
+      border-radius: 40px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 900;
+      margin-bottom: 10px;
+      letter-spacing: -1px;
+    }
+    .subtitle { color: #94a3b8; font-size: 1rem; margin-bottom: 50px; }
+    
+    .pin-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 50px;
+    }
+    .pin-field {
+      width: 65px;
+      height: 75px;
+      background: #f8fafc;
+      border: 3px solid #e2e8f0;
+      border-radius: 20px;
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: #1e293b;
+      text-align: center;
+      outline: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .pin-field:focus {
+      border-color: #3b82f6;
+      background: #fff;
+      transform: translateY(-8px);
+      box-shadow: 0 15px 30px rgba(59, 130, 246, 0.15);
+    }
+    .pin-field.filled {
+      border-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .key {
+      padding: 15px;
+      background: #f1f5f9;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .key:hover { background: #e2e8f0; color: #1e293b; }
+    .key:active { transform: scale(0.95); }
+    
+    .btn-verify {
+      width: 100%;
+      margin-top: 40px;
+      padding: 18px;
+      background: #1e293b;
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-verify:hover { background: #3b82f6; transform: translateY(-2px); }
+
+    .shake { animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both; }
+    @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
+  </style>
+</head>
+<body>
+  <div class="auth-card" id="card">
+    <h1>Verification</h1>
+    <p class="subtitle">Enter the 4-digit PIN sent to your phone</p>
+    
+    <div class="pin-container">
+      <input type="password" class="pin-field" maxlength="1" id="pin1" autocomplete="off">
+      <input type="password" class="pin-field" maxlength="1" id="pin2" autocomplete="off">
+      <input type="password" class="pin-field" maxlength="1" id="pin3" autocomplete="off">
+      <input type="password" class="pin-field" maxlength="1" id="pin4" autocomplete="off">
+    </div>
+
+    <div class="keypad">
+      <button class="key" onclick="press('1')">1</button>
+      <button class="key" onclick="press('2')">2</button>
+      <button class="key" onclick="press('3')">3</button>
+      <button class="key" onclick="press('4')">4</button>
+      <button class="key" onclick="press('5')">5</button>
+      <button class="key" onclick="press('6')">6</button>
+      <button class="key" onclick="press('7')">7</button>
+      <button class="key" onclick="press('8')">8</button>
+      <button class="key" onclick="press('9')">9</button>
+      <button class="key" onclick="clearAll()">C</button>
+      <button class="key" onclick="press('0')">0</button>
+      <button class="key" onclick="back()">⌫</button>
+    </div>
+
+    <button class="btn-verify" onclick="verify()">Verify Access</button>
+  </div>
+
+  <script>
+    const inputs = [document.getElementById('pin1'), document.getElementById('pin2'), document.getElementById('pin3'), document.getElementById('pin4')];
+    
+    inputs.forEach((input, idx) => {
+      input.addEventListener('input', e => {
+        if (e.target.value) {
+          input.classList.add('filled');
+          if (idx < 3) inputs[idx + 1].focus();
+        } else {
+          input.classList.remove('filled');
+        }
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !input.value && idx > 0) inputs[idx - 1].focus();
+      });
+    });
+
+    function press(num) {
+      const next = inputs.find(i => !i.value);
+      if (next) {
+        next.value = num;
+        next.classList.add('filled');
+        const idx = inputs.indexOf(next);
+        if (idx < 3) inputs[idx+1].focus();
+      }
+    }
+
+    function clearAll() {
+      inputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+      inputs[0].focus();
+    }
+
+    function verify() {
+      const pin = inputs.map(i => i.value).join('');
+      if (pin === '1234') {
+        alert('Verification Successful!');
+      } else {
+        const card = document.getElementById('card');
+        card.classList.add('shake');
+        setTimeout(() => card.classList.remove('shake'), 500);
+      }
+    }
+  </script>
+</body>
+</html>

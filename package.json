@@ -1,0 +1,36 @@
+{
+  "name": "input-kit",
+  "private": true,
+  "description": "Headless, unstyled React input and UI primitives — monorepo for the @input-kit scope",
+  "license": "MIT",
+  "author": "Harshit Prakash <immanasjohri@gmail.com> (https://github.com/harshit-d3v)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/harshit-d3v/input-kit.git"
+  },
+  "homepage": "https://github.com/harshit-d3v/input-kit#readme",
+  "bugs": {
+    "url": "https://github.com/harshit-d3v/input-kit/issues"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "gen:registry": "node scripts/gen-registry.mjs && node scripts/gen-demos.mjs",
+    "site:dev": "npm run dev -w @input-kit/site",
+    "site:build": "npm run build -w @input-kit/site",
+    "clean": "npm exec --workspaces -- node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\""
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  }
+}

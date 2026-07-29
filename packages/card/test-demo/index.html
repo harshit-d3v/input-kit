@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/card Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 40px;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      width: 100%;
+      max-width: 500px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #1e293b;
+      font-size: 2rem;
+    }
+    .card-preview {
+      width: 100%;
+      height: 220px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      margin-bottom: 30px;
+      padding: 25px;
+      color: #fff;
+      position: relative;
+      transition: all 0.5s ease;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .card-preview.visa { background: linear-gradient(135deg, #1a1aff, #000080); }
+    .card-preview.mastercard { background: linear-gradient(135deg, #eb001b, #ff5f00); }
+    .card-preview.amex { background: linear-gradient(135deg, #24b087, #016c51); }
+    
+    .chip {
+      width: 50px;
+      height: 40px;
+      background: linear-gradient(135deg, #ffd700, #daa520);
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .brand-logo {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      font-weight: bold;
+      font-style: italic;
+      font-size: 1.5rem;
+      letter-spacing: -1px;
+    }
+    .number-display {
+      font-size: 1.6rem;
+      letter-spacing: 2px;
+      margin-top: 20px;
+      font-family: 'Courier New', Courier, monospace;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    .details {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+    }
+    .label {
+      opacity: 0.7;
+      margin-bottom: 5px;
+      font-size: 0.7rem;
+    }
+    .val {
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label.input-label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #64748b;
+      font-size: 0.9rem;
+    }
+    input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s;
+    }
+    input:focus {
+      outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+    .row {
+      display: flex;
+      gap: 15px;
+    }
+    .row > div { flex: 1; }
+    
+    .hint {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: #64748b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💳 Card Input</h1>
+    
+    <div id="cardUi" class="card-ui card-preview">
+      <div class="chip"></div>
+      <div id="brandLogo" class="brand-logo">CARD</div>
+      <div class="number-display" id="dispNum">•••• •••• •••• ••••</div>
+      <div class="details">
+        <div>
+          <div class="label">Card Holder</div>
+          <div id="dispName" class="val">Your Name</div>
+        </div>
+        <div>
+          <div class="label">Expires</div>
+          <div id="dispExp" class="val">MM/YY</div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="form">
+      <div class="form-group">
+        <label class="input-label">Card Number</label>
+        <input type="text" id="numInput" placeholder="0000 0000 0000 0000" maxlength="19">
+      </div>
+      <div class="form-group">
+        <label class="input-label">Card Holder</label>
+        <input type="text" id="nameInput" placeholder="Enter Name">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label class="input-label">Expiry</label>
+          <input type="text" id="expInput" placeholder="MM/YY" maxlength="5">
+        </div>
+        <div class="form-group">
+          <label class="input-label">CVC</label>
+          <input type="password" id="cvcInput" placeholder="•••" maxlength="4">
+        </div>
+      </div>
+    </div>
+    
+    <div class="hint">
+      💡 Type <b>4</b> for Visa, <b>5</b> for Mastercard, <b>3</b> for Amex
+    </div>
+  </div>
+
+  <script>
+    const cardUi = document.getElementById('cardUi');
+    const brandLogo = document.getElementById('brandLogo');
+    const numInput = document.getElementById('numInput');
+    const nameInput = document.getElementById('nameInput');
+    const expInput = document.getElementById('expInput');
+    
+    const dispNum = document.getElementById('dispNum');
+    const dispName = document.getElementById('dispName');
+    const dispExp = document.getElementById('dispExp');
+
+    numInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\s+/g, '').replace(/\D/g, '');
+      if (v.length > 0) {
+        v = v.match(/.{1,4}/g).join(' ');
+      }
+      e.target.value = v;
+      dispNum.textContent = v || '•••• •••• •••• ••••';
+      
+      cardUi.className = 'card-preview';
+      if (v.startsWith('4')) {
+        cardUi.classList.add('visa');
+        brandLogo.textContent = 'VISA';
+      } else if (v.startsWith('5')) {
+        cardUi.classList.add('mastercard');
+        brandLogo.textContent = 'MasterCard';
+      } else if (v.startsWith('3')) {
+        cardUi.classList.add('amex');
+        brandLogo.textContent = 'AMEX';
+      } else {
+        brandLogo.textContent = 'CARD';
+      }
+    });
+
+    nameInput.addEventListener('input', (e) => {
+      dispName.textContent = e.target.value || 'Your Name';
+    });
+
+    expInput.addEventListener('input', (e) => {
+      let v = e.target.value.replace(/\D/g, '');
+      if (v.length > 2) {
+        v = v.substring(0, 2) + '/' + v.substring(2, 4);
+      }
+      e.target.value = v;
+      dispExp.textContent = v || 'MM/YY';
+    });
+  </script>
+</body>
+</html>

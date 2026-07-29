@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/fullscreen Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+    .container {
+      max-width: 750px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(32px);
+      padding: 80px 60px;
+      border-radius: 60px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      text-align: center;
+      box-shadow: 0 60px 200px rgba(0,0,0,0.7);
+      position: relative;
+    }
+    h1 { margin-bottom: 25px; font-size: 3.2rem; font-weight: 900; letter-spacing: -2px; }
+    .subtitle { color: #94a3b8; font-size: 1.2rem; margin-bottom: 70px; font-weight: 500; line-height: 1.5; }
+    
+    .immersive-zone {
+      width: 100%;
+      height: 420px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #d946ef, #f43f5e);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      border-radius: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 60px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.4);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    
+    .immersive-zone:fullscreen { border-radius: 0; }
+    
+    .btn-immersive {
+      padding: 28px 56px;
+      background: #fff;
+      color: #1e293b;
+      border: none;
+      border-radius: 32px;
+      font-weight: 950;
+      font-size: 1.4rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 25px;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .btn-immersive:hover { transform: scale(1.15) rotate(-2deg); box-shadow: 0 30px 70px rgba(0,0,0,0.5); }
+    .btn-immersive:active { transform: scale(0.9); }
+    
+    .mode-indicator {
+      position: absolute;
+      top: 40px;
+      right: 40px;
+      padding: 10px 30px;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(15px);
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .footer-section { margin-top: 50px; display: flex; flex-direction: column; gap: 15px; }
+    .hint-text { font-size: 1rem; color: #64748b; font-weight: 600; }
+    .kbd-group { display: flex; justify-content: center; gap: 10px; }
+    kbd { background: #334155; padding: 6px 12px; border-radius: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; border: 2px solid #475569; color: #fff; box-shadow: 0 4px 0 #1e293b; }
+    
+    /* Animation for the floating elements */
+    .float { animation: floating 3s ease-in-out infinite; }
+    @keyframes floating { from { transform: translateY(0px); } 65% { transform: translateY(-10px); } to { transform: translateY(0px); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cinema Display</h1>
+    <p class="subtitle">Elevate your user experience with distraction-free, edge-to-edge content presentation mode.</p>
+    
+    <div class="immersive-zone" id="theater">
+      <div class="mode-indicator" id="status">Status: Normal</div>
+      <button class="btn-immersive float" onclick="toggle()">
+        <span id="ico" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2" ry="2"/></svg></span>
+        <span id="lbl">Launch Theater</span>
+      </button>
+    </div>
+
+    <div class="footer-section">
+      <p class="hint-text">Quick Navigation Shortcuts</p>
+      <div class="kbd-group">
+        <kbd>F</kbd> <span style="opacity: 0.4">+</span> <kbd>ENTER</kbd>
+        <span style="margin: 0 10px">/</span>
+        <kbd>ESC</kbd> <span style="font-size: 0.8rem; opacity: 0.5">(TO EXIT)</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+      const launchIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="6" width="14" height="12" rx="2" ry="2"/></svg>';
+      const cinemaIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>';
+
+      function setUiState(active) {
+        document.getElementById('lbl').textContent = active ? 'Minimize View' : 'Launch Theater';
+        document.getElementById('status').textContent = active ? 'Status: Cinema' : 'Status: Normal';
+        document.getElementById('ico').innerHTML = active ? cinemaIcon : launchIcon;
+        document.getElementById('theater').classList.toggle('float', !active);
+      }
+
+    function toggle() {
+      const el = document.getElementById('theater');
+
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().then(() => {
+            setUiState(true);
+          }).catch((err) => {
+            alert(`Immersive mode blocked${err?.message ? `: ${err.message}` : '.'}`);
+        });
+      } else {
+        document.exitFullscreen();
+          setUiState(false);
+      }
+    }
+
+    document.addEventListener('fullscreenchange', () => {
+         setUiState(!!document.fullscreenElement);
+    });
+
+    // Add keyboard shortcut support
+    document.addEventListener('keydown', e => {
+       if (e.key === 'f' || e.key === 'F') toggle();
+    });
+  </script>
+</body>
+</html>

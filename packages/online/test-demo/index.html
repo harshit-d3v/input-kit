@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/online Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+    .status-card {
+      max-width: 450px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 60px 40px;
+      border-radius: 40px;
+      text-align: center;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    h1 { font-size: 2rem; font-weight: 800; margin-bottom: 30px; letter-spacing: -1px; }
+    
+    .status-pulse {
+      width: 120px;
+      height: 120px;
+      background: #10b981;
+      border-radius: 50%;
+      margin: 0 auto 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      position: relative;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .status-pulse::after {
+      content: '';
+      position: absolute;
+      inset: -15px;
+      border-radius: 50%;
+      border: 2px solid #10b981;
+      animation: pulse 2s infinite;
+      opacity: 0;
+    }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 0; } }
+    
+    .status-pulse.offline { background: #ef4444; }
+    .status-pulse.offline::after { border-color: #ef4444; }
+    
+    .badge {
+      display: inline-block;
+      padding: 8px 24px;
+      background: #10b981;
+      color: #fff;
+      border-radius: 50px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .badge.offline { background: #ef4444; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+    
+    .info {
+      color: #94a3b8;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+    
+    .sim-toggle {
+      margin-top: 40px;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .sim-toggle:hover { background: rgba(255, 255, 255, 0.2); }
+    
+    .stat-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-top: 30px;
+      padding-top: 30px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .stat { display: flex; flex-direction: column; gap: 5px; }
+    .stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; font-weight: 800; }
+    .stat-val { font-weight: 700; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="status-card">
+    <h1>Network Status</h1>
+    
+    <div class="status-pulse" id="pulse" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div>
+    <div class="badge" id="badge">System Online</div>
+    
+    <p class="info" id="info">Real-time data synchronization is active. All systems functional.</p>
+
+    <div class="stat-row">
+      <div class="stat"><span class="stat-label">Latency</span><span class="stat-val" id="lat">24ms</span></div>
+      <div class="stat"><span class="stat-label">Protocol</span><span class="stat-val">WSS/TLS</span></div>
+    </div>
+
+    <button class="sim-toggle" onclick="toggleSim()">Simulate Connectivity</button>
+  </div>
+
+  <script>
+    let online = true;
+    const onlineIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>';
+    const offlineIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 22 12.55"/><path d="M5 12.55a11 11 0 0 1 5.17-2.39"/><path d="M10.71 5.05A16 16 0 0 1 22 9"/><path d="M6.23 6.26A15.95 15.95 0 0 0 2 9"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><path d="M12 20h.01"/></svg>';
+
+    function toggleSim() {
+      online = !online;
+      update();
+    }
+
+    function update() {
+      const p = document.getElementById('pulse');
+      const b = document.getElementById('badge');
+      const i = document.getElementById('info');
+      const l = document.getElementById('lat');
+      
+      if (online) {
+        p.classList.remove('offline');
+        b.classList.remove('offline');
+        p.innerHTML = onlineIcon;
+        b.textContent = 'System Online';
+        i.textContent = 'Real-time data synchronization is active. All systems functional.';
+        l.textContent = (Math.floor(Math.random() * 20) + 15) + 'ms';
+      } else {
+        p.classList.add('offline');
+        b.classList.add('offline');
+        p.innerHTML = offlineIcon;
+        b.textContent = 'System Offline';
+        i.textContent = 'Connectivity lost. Retrying synchronization every 5 seconds...';
+        l.textContent = '---';
+      }
+    }
+
+    window.addEventListener('online', () => { online = true; update(); });
+    window.addEventListener('offline', () => { online = false; update(); });
+    setInterval(() => { if(online) update(); }, 3000);
+  </script>
+</body>
+</html>

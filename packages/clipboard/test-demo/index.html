@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/clipboard Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #14b8a6, #0d9488);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: #fff;
+      padding: 50px;
+      border-radius: 32px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.2);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+    }
+    .section { margin-bottom: 40px; }
+    .label {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #64748b;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .code-box {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 16px;
+      position: relative;
+      font-family: 'Fira Code', monospace;
+      color: #38bdf8;
+      font-size: 0.95rem;
+      border: 1px solid #334155;
+      overflow-x: auto;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      padding: 8px 16px;
+      background: #334155;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background: #475569;
+      color: #fff;
+    }
+    .copy-btn.success {
+      background: #10b981;
+      border-color: #10b981;
+      color: #fff;
+    }
+    
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+    input {
+      flex: 1;
+      padding: 14px 20px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #14b8a6; }
+    
+    .big-btn {
+      padding: 14px 24px;
+      background: #14b8a6;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .big-btn:hover { background: #0d9488; transform: translateY(-2px); }
+    
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 50px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+        stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="vertical-align:middle;margin-right:10px">
+        <rect x="9" y="2" width="6" height="4" rx="1" ry="1"/>
+        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+      </svg>
+      Clipboard Kit
+    </h1>
+    
+    <div class="section">
+      <div class="label">Quick Install</div>
+      <div class="code-box">
+        npm install @input-kit/clipboard
+        <button class="copy-btn" onclick="copy(this, 'npm install @input-kit/clipboard')">Copy</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Usage Example</div>
+      <div class="code-box">
+        import { useClipboard } from '@input-kit/clipboard';
+        <button class="copy-btn" onclick="copy(this, 'import { useClipboard } from \'@input-kit/clipboard\';')">Copy</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="label">Custom Text</div>
+      <div class="input-row">
+        <input type="text" id="customInput" placeholder="Type something..." value="https://input-kit.com/share/9z3k">
+        <button class="big-btn" onclick="copyInput()">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+      style="vertical-align:middle;margin-right:6px">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    Copied to clipboard!
+  </div>
+
+  <script>
+    function copy(btn, text) {
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.classList.add('success');
+        showToast();
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.classList.remove('success');
+        }, 2000);
+      }).catch(function() {
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
+    }
+
+    function copyInput() {
+      const input = document.getElementById('customInput');
+      const val = input.value.trim();
+      if (!val) return;
+      navigator.clipboard.writeText(val).then(() => showToast()).catch(function() {
+        // Silent fail — clipboard may be blocked by the browser
+      });
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+  </script>
+</body>
+</html>

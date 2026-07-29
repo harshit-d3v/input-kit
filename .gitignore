@@ -1,0 +1,20 @@
+node_modules/
+dist/
+coverage/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Vercel
+.vercel/
+
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+.env*.local
+.idea/
+.vscode/

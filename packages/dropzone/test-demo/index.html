@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/dropzone Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: #fff;
+      padding: 50px;
+      border-radius: 32px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+    }
+    .drop-area {
+      border: 3px dashed #e2e8f0;
+      border-radius: 24px;
+      padding: 60px 40px;
+      text-align: center;
+      background: #f8fafc;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+    }
+    .drop-area:hover, .drop-area.dragover {
+      border-color: #6366f1;
+      background: #eff6ff;
+      transform: scale(1.02);
+    }
+    .icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+    .main-text {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    .sub-text {
+      color: #64748b;
+      font-size: 0.95rem;
+    }
+    
+    .file-list {
+      margin-top: 40px;
+      display: grid;
+      gap: 12px;
+    }
+    .file-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } }
+    
+    .file-icon {
+      width: 44px;
+      height: 44px;
+      background: #6366f1;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-weight: 800;
+      font-size: 0.8rem;
+    }
+    .file-info { flex: 1; }
+    .file-name {
+      font-weight: 600;
+      color: #1e293b;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+    .file-size {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+    .remove-btn {
+      padding: 8px;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .remove-btn:hover { color: #ef4444; }
+    
+    #fileInput { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📤 Upload Files</h1>
+    
+    <div class="drop-area" id="dropArea">
+      <span class="icon">☁️</span>
+      <p class="main-text">Drag & drop files here</p>
+      <p class="sub-text">or click to browse your computer</p>
+      <input type="file" id="fileInput" multiple>
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+  </div>
+
+  <script>
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileList = document.getElementById('fileList');
+
+    dropArea.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt => {
+      dropArea.addEventListener(evt, e => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    });
+
+    dropArea.addEventListener('dragover', () => dropArea.classList.add('dragover'));
+    ['dragleave', 'drop'].forEach(evt => dropArea.addEventListener(evt, () => dropArea.classList.remove('dragover')));
+
+    dropArea.addEventListener('drop', e => {
+      const files = e.dataTransfer.files;
+      handleFiles(files);
+    });
+
+    fileInput.addEventListener('change', e => {
+      handleFiles(e.target.files);
+    });
+
+    function handleFiles(files) {
+      Array.from(files).forEach(file => {
+        const ext = file.name.split('.').pop().toUpperCase();
+        const size = (file.size / 1024).toFixed(1) + ' KB';
+        
+        const card = document.createElement('div');
+        card.className = 'file-card';
+        card.innerHTML = `
+          <div class="file-icon">${ext}</div>
+          <div class="file-info">
+            <div class="file-name">${file.name}</div>
+            <div class="file-size">${size}</div>
+          </div>
+          <div class="remove-btn" onclick="this.parentElement.remove()">✕</div>
+        `;
+        fileList.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

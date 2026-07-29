@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/upload Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6, #d946ef);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .uploader-card {
+      max-width: 650px;
+      width: 100%;
+      background: #fff;
+      padding: 70px 50px;
+      border-radius: 48px;
+      box-shadow: 0 50px 150px rgba(0,0,0,0.35);
+      position: relative;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 50px;
+      color: #1e293b;
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: -2px;
+    }
+    
+    .file-queue {
+      display: grid;
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+    .queue-row {
+      padding: 25px;
+      background: #f8fafc;
+      border-radius: 24px;
+      border: 2px solid #f1f5f9;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+    .queue-row:hover { border-color: #3b82f6; transform: scale(1.02); }
+    
+    .row-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      position: relative;
+      z-index: 10;
+    }
+    .fname { font-weight: 800; color: #1e293b; font-size: 1.1rem; }
+    .fstatus { font-size: 0.8rem; font-weight: 900; color: #3b82f6; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .bar-track {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      position: relative;
+      z-index: 10;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .controls { text-align: center; }
+    .btn-action {
+      padding: 22px 45px;
+      background: #1e293b;
+      color: #fff;
+      border: none;
+      border-radius: 24px;
+      font-weight: 900;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+    }
+    .btn-action:hover { background: #3b82f6; transform: translateY(-4px); box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3); }
+    .btn-action:active { transform: scale(0.96); }
+    
+    .stats-summary { margin-top: 30px; color: #94a3b8; font-weight: 600; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="uploader-card">
+    <h1>Cloud Sync</h1>
+    
+    <div class="file-queue">
+      <div class="queue-row">
+        <div class="row-info">
+          <span class="fname">design_assets_v2.fig</span>
+          <span class="fstatus" id="s1">Pending...</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="p1"></div></div>
+      </div>
+      <div class="queue-row">
+        <div class="row-info">
+          <span class="fname">marketing_video.mp4</span>
+          <span class="fstatus" id="s2">Pending...</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="p2"></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn-action" onclick="go()">Sync to Cloud</button>
+      <div class="stats-summary">Total size: 342.5 MB • 2 files selected</div>
+    </div>
+  </div>
+
+  <script>
+    function go() {
+      process('1', 3000);
+      setTimeout(() => process('2', 7000), 1000);
+    }
+
+    function process(id, ms) {
+      const p = document.getElementById('p' + id);
+      const s = document.getElementById('s' + id);
+      let cur = 0;
+      const step = 100 / (ms / 100);
+      const timer = setInterval(() => {
+        cur += step;
+        if (cur >= 100) {
+          cur = 100;
+          clearInterval(timer);
+          s.textContent = '✅ Synced';
+          s.style.color = '#10b981';
+        } else {
+          s.textContent = Math.round(cur) + '% Syncing';
+        }
+        p.style.width = cur + '%';
+      }, 100);
+    }
+  </script>
+</body>
+</html>

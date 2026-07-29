@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Virtual Scroll Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 600px;
+      width: 100%;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #8e2de2; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+    .stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat {
+      flex: 1;
+      padding: 1rem;
+      background: linear-gradient(135deg, #8e2de210 0%, #4a00e010 100%);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #8e2de2;
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      color: #6c757d;
+      margin-top: 0.25rem;
+    }
+    .virtual-list {
+      height: 500px;
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      overflow-y: auto;
+      position: relative;
+    }
+    .virtual-list-content {
+      position: relative;
+    }
+    .list-item {
+      padding: 1rem;
+      border-bottom: 1px solid #e9ecef;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: background 0.2s;
+    }
+    .list-item:hover {
+      background: #f8f9fa;
+    }
+    .item-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8e2de2 0%, #4a00e0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 1.25rem;
+    }
+    .item-content {
+      flex: 1;
+    }
+    .item-title {
+      font-weight: 600;
+      color: #212529;
+      margin-bottom: 0.25rem;
+    }
+    .item-subtitle {
+      font-size: 0.875rem;
+      color: #6c757d;
+    }
+    .item-number {
+      font-weight: bold;
+      color: #8e2de2;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📜 Virtual Scroll</h1>
+    <p class="subtitle">Smoothly scroll through 10,000 items • Only renders visible items</p>
+    
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">10,000</div>
+        <div class="stat-label">Total Items</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="renderedCount">0</div>
+        <div class="stat-label">Rendered</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" id="scrollPosition">0%</div>
+        <div class="stat-label">Scroll Position</div>
+      </div>
+    </div>
+
+    <div class="virtual-list" id="virtualList">
+      <div class="virtual-list-content" id="listContent"></div>
+    </div>
+  </div>
+
+  <script>
+    const totalItems = 10000;
+    const itemHeight = 72;
+    const containerHeight = 500;
+    const visibleItems = Math.ceil(containerHeight / itemHeight) + 2;
+    
+    const virtualList = document.getElementById('virtualList');
+    const listContent = document.getElementById('listContent');
+    const renderedCount = document.getElementById('renderedCount');
+    const scrollPosition = document.getElementById('scrollPosition');
+
+    function getItemData(index) {
+      const names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
+      const roles = ['Engineer', 'Designer', 'Manager', 'Analyst', 'Developer', 'Architect', 'Consultant'];
+      
+      return {
+        id: index + 1,
+        name: `${names[index % names.length]} ${Math.floor(index / names.length)}`,
+        role: roles[index % roles.length],
+        initial: names[index % names.length][0]
+      };
+    }
+
+    function render() {
+      const scrollTop = virtualList.scrollTop;
+      const startIndex = Math.floor(scrollTop / itemHeight);
+      const endIndex = Math.min(startIndex + visibleItems, totalItems);
+      
+      listContent.style.height = `${totalItems * itemHeight}px`;
+      listContent.style.paddingTop = `${startIndex * itemHeight}px`;
+      
+      let html = '';
+      let count = 0;
+      
+      for (let i = startIndex; i < endIndex; i++) {
+        const item = getItemData(i);
+        html += `
+          <div class="list-item">
+            <div class="item-avatar">${item.initial}</div>
+            <div class="item-content">
+              <div class="item-title">${item.name}</div>
+              <div class="item-subtitle">${item.role}</div>
+            </div>
+            <div class="item-number">#${item.id}</div>
+          </div>
+        `;
+        count++;
+      }
+      
+      listContent.innerHTML = html;
+      renderedCount.textContent = count;
+      
+      const scrollPercent = ((scrollTop / (totalItems * itemHeight - containerHeight)) * 100).toFixed(1);
+      scrollPosition.textContent = `${isNaN(scrollPercent) ? 0 : scrollPercent}%`;
+    }
+
+    virtualList.addEventListener('scroll', render);
+    
+    render();
+  </script>
+</body>
+</html>

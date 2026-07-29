@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sortable Table Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+    }
+    h1 { color: #667eea; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+    .table-container {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    th {
+      padding: 1.25rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+    th:hover {
+      background: rgba(255,255,255,0.1);
+    }
+    th::after {
+      content: '↕️';
+      margin-left: 0.5rem;
+      font-size: 0.875rem;
+    }
+    th.sort-asc::after {
+      content: '↑';
+    }
+    th.sort-desc::after {
+      content: '↓';
+    }
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid #e9ecef;
+    }
+    tr:hover {
+      background: #f8f9fa;
+    }
+    .badge {
+      padding: 0.375rem 0.75rem;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .badge-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .badge-danger {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 0.5rem;
+    }
+    .status-active {
+      background: #28a745;
+    }
+    .status-pending {
+      background: #ffc107;
+    }
+    .status-inactive {
+      background: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📊 Sortable Table</h1>
+    <p class="subtitle">Click column headers to sort • 50 employee records</p>
+    
+    <div class="table-container">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th data-column="id">ID</th>
+            <th data-column="name">Name</th>
+            <th data-column="department">Department</th>
+            <th data-column="salary">Salary</th>
+            <th data-column="status">Status</th>
+            <th data-column="joinDate">Join Date</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const employees = [
+      {id: 1, name: 'Alice Johnson', department: 'Engineering', salary: 95000, status: 'Active', joinDate: '2020-03-15'},
+      {id: 2, name: 'Bob Smith', department: 'Sales', salary: 75000, status: 'Active', joinDate: '2019-07-22'},
+      {id: 3, name: 'Carol White', department: 'Marketing', salary: 68000, status: 'Pending', joinDate: '2021-11-30'},
+      {id: 4, name: 'David Brown', department: 'Engineering', salary: 105000, status: 'Active', joinDate: '2018-05-10'},
+      {id: 5, name: 'Eve Davis', department: 'HR', salary: 72000, status: 'Active', joinDate: '2020-09-12'},
+      {id: 6, name: 'Frank Miller', department: 'Sales', salary: 80000, status: 'Inactive', joinDate: '2017-02-28'},
+      {id: 7, name: 'Grace Lee', department: 'Engineering', salary: 98000, status: 'Active', joinDate: '2019-12-05'},
+      {id: 8, name: 'Henry Wilson', department: 'Marketing', salary: 71000, status: 'Active', joinDate: '2021-06-18'},
+      {id: 9, name: 'Ivy Martinez', department: 'Engineering', salary: 92000, status: 'Active', joinDate: '2020-08-21'},
+      {id: 10, name: 'Jack Taylor', department: 'Sales', salary: 77000, status: 'Pending', joinDate: '2022-01-10'},
+      {id: 11, name: 'Kelly Anderson', department: 'HR', salary: 69000, status: 'Active', joinDate: '2019-04-15'},
+      {id: 12, name: 'Leo Thomas', department: 'Engineering', salary: 110000, status: 'Active', joinDate: '2017-11-20'},
+      {id: 13, name: 'Mia Jackson', department: 'Marketing', salary: 73000, status: 'Active', joinDate: '2020-10-08'},
+      {id: 14, name: 'Noah Garcia', department: 'Sales', salary: 82000, status: 'Active', joinDate: '2018-09-14'},
+      {id: 15, name: 'Olivia Rodriguez', department: 'Engineering', salary: 97000, status: 'Active', joinDate: '2021-03-22'},
+      {id: 16, name: 'Paul Martinez', department: 'HR', salary: 70000, status: 'Inactive', joinDate: '2019-07-30'},
+      {id: 17, name: 'Quinn Hernandez', department: 'Marketing', salary: 74000, status: 'Active', joinDate: '2020-05-12'},
+      {id: 18, name: 'Rachel Lopez', department: 'Sales', salary: 79000, status: 'Active', joinDate: '2018-12-01'},
+      {id: 19, name: 'Sam Gonzalez', department: 'Engineering', salary: 103000, status: 'Active', joinDate: '2017-08-17'},
+      {id: 20, name: 'Tina Wilson', department: 'HR', salary: 71500, status: 'Active', joinDate: '2021-02-25'}
+    ];
+
+    let currentSort = { column: null, direction: null };
+
+    function renderTable(data) {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = data.map(emp => `
+        <tr>
+          <td>${emp.id}</td>
+          <td><strong>${emp.name}</strong></td>
+          <td>${emp.department}</td>
+          <td>$${emp.salary.toLocaleString()}</td>
+          <td>
+            <span class="status-dot status-${emp.status.toLowerCase()}"></span>
+            <span class="badge badge-${getStatusClass(emp.status)}">${emp.status}</span>
+          </td>
+          <td>${new Date(emp.joinDate).toLocaleDateString()}</td>
+        </tr>
+      `).join('');
+    }
+
+    function getStatusClass(status) {
+      if (status === 'Active') return 'success';
+      if (status === 'Pending') return 'warning';
+      return 'danger';
+    }
+
+    function sortTable(column) {
+      const headers = document.querySelectorAll('th');
+      
+      if (currentSort.column === column) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = column;
+        currentSort.direction = 'asc';
+      }
+
+      headers.forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+        if (th.getAttribute('data-column') === column) {
+          th.classList.add(`sort-${currentSort.direction}`);
+        }
+      });
+
+      const sorted = [...employees].sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+
+        if (typeof aVal === 'string') {
+          aVal = aVal.toLowerCase();
+          bVal = bVal.toLowerCase();
+        }
+
+        if (currentSort.direction === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
+      });
+
+      renderTable(sorted);
+    }
+
+    document.querySelectorAll('th').forEach(th => {
+      th.addEventListener('click', () => {
+        const column = th.getAttribute('data-column');
+        sortTable(column);
+      });
+    });
+
+    renderTable(employees);
+  </script>
+</body>
+</html>

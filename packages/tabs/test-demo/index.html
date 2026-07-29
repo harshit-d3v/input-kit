@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tabs Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      min-height: 100vh;
+      padding: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      max-width: 700px;
+      width: 100%;
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    h1 {
+      color: #667eea;
+      font-size: 2rem;
+      padding: 2rem 2rem 0;
+      text-align: center;
+    }
+    .subtitle {
+      text-align: center;
+      color: #6c757d;
+      padding: 0.5rem 2rem 1.5rem;
+    }
+    .tabs-header {
+      display: flex;
+      background: #f8f9fa;
+      border-bottom: 2px solid #e9ecef;
+      padding: 0 1rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 1.25rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #6c757d;
+      transition: all 0.3s;
+      position: relative;
+      font-size: 1rem;
+    }
+    .tab-btn.active {
+      color: #667eea;
+    }
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #667eea;
+    }
+    .tab-btn:hover {
+      background: #f1f3f5;
+    }
+    .tab-content {
+      padding: 2.5rem;
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .tab-content h3 {
+      color: #212529;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .tab-content p {
+      color: #6c757d;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+    .feature-list {
+      list-style: none;
+      margin-top: 1.5rem;
+    }
+    .feature-list li {
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      color: #495057;
+    }
+    .feature-list li::before {
+      content: '✓ ';
+      color: #667eea;
+      font-weight: bold;
+      margin-right: 0.5rem;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .stat-box {
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      border-radius: 12px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #212529;
+    }
+    .stat-label {
+      font-size: 0.875rem;
+      color: #495057;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📑 Tabs Component</h1>
+    <p class="subtitle">Smooth transitions with 4 interactive tabs</p>
+    
+    <div class="tabs-header">
+      <button class="tab-btn active" onclick="showTab(0)">Profile</button>
+      <button class="tab-btn" onclick="showTab(1)">Settings</button>
+      <button class="tab-btn" onclick="showTab(2)">Analytics</button>
+      <button class="tab-btn" onclick="showTab(3)">Notifications</button>
+    </div>
+
+    <div class="tab-content active">
+      <h3>User Profile</h3>
+      <p>Manage your personal information and public profile settings.</p>
+      <ul class="feature-list">
+        <li>Update profile picture and bio</li>
+        <li>Change username and display name</li>
+        <li>Manage privacy settings</li>
+        <li>View profile completion status</li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <h3>Application Settings</h3>
+      <p>Configure your preferences and application behavior.</p>
+      <ul class="feature-list">
+        <li>Theme and appearance options</li>
+        <li>Language and region settings</li>
+        <li>Security and authentication</li>
+        <li>Email notifications preferences</li>
+      </ul>
+    </div>
+
+    <div class="tab-content">
+      <h3>Analytics Dashboard</h3>
+      <p>Track your activity and performance metrics.</p>
+      <div class="stats">
+        <div class="stat-box">
+          <div class="stat-value">1,234</div>
+          <div class="stat-label">Total Views</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">89%</div>
+          <div class="stat-label">Engagement</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">456</div>
+          <div class="stat-label">Active Users</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">98.5%</div>
+          <div class="stat-label">Satisfaction</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content">
+      <h3>Notification Center</h3>
+      <p>Stay updated with your latest alerts and messages.</p>
+      <ul class="feature-list">
+        <li>3 new messages from your team</li>
+        <li>System update available - v2.4.0</li>
+        <li>Weekly report ready to download</li>
+        <li>5 pending invitations to review</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    function showTab(index) {
+      const buttons = document.querySelectorAll('.tab-btn');
+      const contents = document.querySelectorAll('.tab-content');
+      
+      buttons.forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+      
+      contents.forEach((content, i) => {
+        content.classList.toggle('active', i === index);
+      });
+    }
+  </script>
+</body>
+</html>

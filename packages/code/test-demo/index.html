@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Code Highlight Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      padding: 2.5rem;
+      border-radius: 24px;
+      box-shadow: 0 25px 70px rgba(0,0,0,0.5);
+    }
+    h1 { color: #203a43; font-size: 2.5rem; margin-bottom: 0.5rem; text-align: center; }
+    .subtitle { text-align: center; color: #6c757d; margin-bottom: 2rem; }
+    .code-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0;
+      border-bottom: 2px solid #e9ecef;
+    }
+    .code-tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #6c757d;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .code-tab.active {
+      color: #203a43;
+    }
+    .code-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #203a43;
+    }
+    .code-block {
+      display: none;
+      background: #282c34;
+      border-radius: 0 0 12px 12px;
+      overflow: hidden;
+    }
+    .code-block.active {
+      display: block;
+    }
+    .code-header {
+      background: #21252b;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .code-lang {
+      color: #abb2bf;
+      font-weight: bold;
+      font-size: 0.875rem;
+    }
+    .copy-btn {
+      padding: 0.5rem 1rem;
+      background: #61afef;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+    .copy-btn:hover {
+      background: #528bff;
+    }
+    .code-content {
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+    .keyword { color: #c678dd; }
+    .function { color: #61afef; }
+    .string { color: #98c379; }
+    .number { color: #d19a66; }
+    .comment { color: #5c6370; font-style: italic; }
+    .tag { color: #e06c75; }
+    .attr { color: #d19a66; }
+    .line-number {
+      color: #5c6370;
+      margin-right: 1.5rem;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="#203a43" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="vertical-align:middle;margin-right:10px">
+        <polyline points="16 18 22 12 16 6"/>
+        <polyline points="8 6 2 12 8 18"/>
+      </svg>
+      Code Highlighter
+    </h1>
+    <p class="subtitle">Syntax highlighting for HTML, CSS, and JavaScript</p>
+    
+    <div class="code-tabs">
+      <button class="code-tab active" onclick="showCode(0)">HTML</button>
+      <button class="code-tab" onclick="showCode(1)">CSS</button>
+      <button class="code-tab" onclick="showCode(2)">JavaScript</button>
+    </div>
+
+    <div class="code-block active">
+      <div class="code-header">
+        <span class="code-lang">HTML</span>
+        <button class="copy-btn" onclick="copyCode(0)">Copy</button>
+      </div>
+      <div class="code-content"><pre><code><span class="line-number">1</span>  <span class="tag">&lt;!DOCTYPE <span class="attr">html</span>&gt;</span>
+<span class="line-number">2</span>  <span class="tag">&lt;html <span class="attr">lang</span>=<span class="string">"en"</span>&gt;</span>
+<span class="line-number">3</span>  <span class="tag">&lt;head&gt;</span>
+<span class="line-number">4</span>    <span class="tag">&lt;meta <span class="attr">charset</span>=<span class="string">"UTF-8"</span>&gt;</span>
+<span class="line-number">5</span>    <span class="tag">&lt;meta <span class="attr">name</span>=<span class="string">"viewport"</span> <span class="attr">content</span>=<span class="string">"width=device-width"</span>&gt;</span>
+<span class="line-number">6</span>    <span class="tag">&lt;title&gt;</span>My Website<span class="tag">&lt;/title&gt;</span>
+<span class="line-number">7</span>  <span class="tag">&lt;/head&gt;</span>
+<span class="line-number">8</span>  <span class="tag">&lt;body&gt;</span>
+<span class="line-number">9</span>    <span class="tag">&lt;div <span class="attr">class</span>=<span class="string">"container"</span>&gt;</span>
+<span class="line-number">10</span>      <span class="tag">&lt;h1&gt;</span>Welcome<span class="tag">&lt;/h1&gt;</span>
+<span class="line-number">11</span>      <span class="tag">&lt;p&gt;</span>Hello, World!<span class="tag">&lt;/p&gt;</span>
+<span class="line-number">12</span>    <span class="tag">&lt;/div&gt;</span>
+<span class="line-number">13</span>  <span class="tag">&lt;/body&gt;</span>
+<span class="line-number">14</span>  <span class="tag">&lt;/html&gt;</span></code></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">CSS</span>
+        <button class="copy-btn" onclick="copyCode(1)">Copy</button>
+      </div>
+      <div class="code-content"><pre><code><span class="line-number">1</span>  <span class="comment">/* Modern CSS Styles */</span>
+<span class="line-number">2</span>  <span class="tag">body</span> {
+<span class="line-number">3</span>    <span class="attr">font-family:</span> <span class="string">system-ui, sans-serif</span>;
+<span class="line-number">4</span>    <span class="attr">background:</span> <span class="function">linear-gradient</span>(<span class="number">135deg</span>, <span class="string">#667eea</span>, <span class="string">#764ba2</span>);
+<span class="line-number">5</span>    <span class="attr">margin:</span> <span class="number">0</span>;
+<span class="line-number">6</span>    <span class="attr">padding:</span> <span class="number">2rem</span>;
+<span class="line-number">7</span>  }
+<span class="line-number">8</span>  
+<span class="line-number">9</span>  <span class="tag">.container</span> {
+<span class="line-number">10</span>    <span class="attr">max-width:</span> <span class="number">1200px</span>;
+<span class="line-number">11</span>    <span class="attr">margin:</span> <span class="number">0</span> <span class="keyword">auto</span>;
+<span class="line-number">12</span>    <span class="attr">background:</span> <span class="string">white</span>;
+<span class="line-number">13</span>    <span class="attr">border-radius:</span> <span class="number">16px</span>;
+<span class="line-number">14</span>    <span class="attr">box-shadow:</span> <span class="number">0</span> <span class="number">10px</span> <span class="number">30px</span> <span class="function">rgba</span>(<span class="number">0,0,0,0.2</span>);
+<span class="line-number">15</span>  }</code></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">JavaScript</span>
+        <button class="copy-btn" onclick="copyCode(2)">Copy</button>
+      </div>
+      <div class="code-content"><pre><code><span class="line-number">1</span>  <span class="comment">// Modern JavaScript Example</span>
+<span class="line-number">2</span>  <span class="keyword">const</span> <span class="function">fetchData</span> = <span class="keyword">async</span> (<span class="attr">url</span>) => {
+<span class="line-number">3</span>    <span class="keyword">try</span> {
+<span class="line-number">4</span>      <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="function">fetch</span>(url);
+<span class="line-number">5</span>      <span class="keyword">const</span> data = <span class="keyword">await</span> response.<span class="function">json</span>();
+<span class="line-number">6</span>      <span class="keyword">return</span> data;
+<span class="line-number">7</span>    } <span class="keyword">catch</span> (error) {
+<span class="line-number">8</span>      console.<span class="function">error</span>(<span class="string">'Error fetching data:'</span>, error);
+<span class="line-number">9</span>      <span class="keyword">throw</span> error;
+<span class="line-number">10</span>    }
+<span class="line-number">11</span>  };
+<span class="line-number">12</span>  
+<span class="line-number">13</span>  <span class="comment">// Use the function</span>
+<span class="line-number">14</span>  <span class="function">fetchData</span>(<span class="string">'/api/users'</span>)
+<span class="line-number">15</span>    .<span class="function">then</span>(users => console.<span class="function">log</span>(users))
+<span class="line-number">16</span>    .<span class="function">catch</span>(err => console.<span class="function">error</span>(err));</code></pre></div>
+    </div>
+  </div>
+
+  <script>
+    const codeBlocks = [
+      '<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width">\n  <title>My Website</title>\n</head>\n<body>\n  <div class="container">\n    <h1>Welcome</h1>\n    <p>Hello, World!</p>\n  </div>\n</body>\n</html>',
+      '/* Modern CSS Styles */\nbody {\n  font-family: system-ui, sans-serif;\n  background: linear-gradient(135deg, #667eea, #764ba2);\n  margin: 0;\n  padding: 2rem;\n}\n\n.container {\n  max-width: 1200px;\n  margin: 0 auto;\n  background: white;\n  border-radius: 16px;\n  box-shadow: 0 10px 30px rgba(0,0,0,0.2);\n}',
+      '// Modern JavaScript Example\nconst fetchData = async (url) => {\n  try {\n    const response = await fetch(url);\n    const data = await response.json();\n    return data;\n  } catch (error) {\n    console.error(\'Error fetching data:\', error);\n    throw error;\n  }\n};\n\n// Use the function\nfetchData(\'/api/users\')\n  .then(users => console.log(users))\n  .catch(err => console.error(err));'
+    ];
+
+    function showCode(index) {
+      document.querySelectorAll('.code-tab').forEach((tab, i) => {
+        tab.classList.toggle('active', i === index);
+      });
+      document.querySelectorAll('.code-block').forEach((block, i) => {
+        block.classList.toggle('active', i === index);
+      });
+    }
+
+    function copyCode(index) {
+      const btn = document.querySelectorAll('.copy-btn')[index];
+      navigator.clipboard.writeText(codeBlocks[index]).then(() => {
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      }).catch(function() {
+        const originalText = btn.textContent;
+        btn.textContent = 'Failed';
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

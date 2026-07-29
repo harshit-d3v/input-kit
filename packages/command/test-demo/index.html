@@ -1,0 +1,185 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/command Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+    }
+    .trigger-text {
+      text-align: center;
+      opacity: 0.8;
+    }
+    kbd {
+      background: #334155;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      border: 1px solid #475569;
+      box-shadow: 0 2px 0 #000;
+    }
+    
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      justify-content: center;
+      padding-top: 100px;
+      z-index: 100;
+    }
+    .command-box {
+      width: 100%;
+      max-width: 600px;
+      height: fit-content;
+      background: #1e293b;
+      border-radius: 16px;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+      border: 1px solid #334155;
+      overflow: hidden;
+      animation: zoomIn 0.2s ease-out;
+    }
+    @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } }
+    
+    .input-wrapper {
+      padding: 20px;
+      border-bottom: 1px solid #334155;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .search-icon { opacity: 0.5; }
+    input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.1rem;
+      outline: none;
+    }
+    
+    .list {
+      padding: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .group-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #64748b;
+      padding: 15px 12px 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .item {
+      padding: 12px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .item:hover, .item.selected {
+      background: #334155;
+      color: #38bdf8;
+    }
+    .item-icon { width: 20px; opacity: 0.7; }
+    .item-label { flex: 1; font-weight: 500; }
+    .item-shortcut { font-size: 0.75rem; opacity: 0.4; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="trigger-text">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="vertical-align:middle;margin-right:10px">
+        <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+        <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/>
+      </svg>
+      Command Palette
+    </h1>
+    <p>Press <kbd>Cmd</kbd> + <kbd>K</kbd> to open</p>
+    <button onclick="document.getElementById('palette').style.display='flex'" style="margin-top: 20px; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Open Manually</button>
+  </div>
+
+  <div class="overlay" id="palette">
+    <div class="command-box">
+      <div class="input-wrapper">
+        <span class="search-icon" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </span>
+        <input type="text" placeholder="Type a command or search..." autofocus id="cmdInput">
+      </div>
+      <div class="list">
+        <div class="group-label">Suggestions</div>
+        <div class="item selected">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+          <span class="item-label">Search Docs</span>
+          <span class="item-shortcut">⌘S</span>
+        </div>
+        <div class="item">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg></span>
+          <span class="item-label">Deploy to Vercel</span>
+          <span class="item-shortcut">⌘D</span>
+        </div>
+        <div class="group-label">Account</div>
+        <div class="item">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+          <span class="item-label">View Profile</span>
+          <span class="item-shortcut">⌘P</span>
+        </div>
+        <div class="item">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M21 12h-2M5 12H3M17.66 18.66l1.41-1.41M4.93 4.93l1.41 1.41M12 21v-2M12 5V3"/></svg></span>
+          <span class="item-label">Settings</span>
+          <span class="item-shortcut">⌘,</span>
+        </div>
+        <div class="group-label">System</div>
+        <div class="item">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></span>
+          <span class="item-label">Toggle Dark Mode</span>
+          <span class="item-shortcut">⇧⌘D</span>
+        </div>
+        <div class="item">
+          <span class="item-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+          <span class="item-label">Logout</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        document.getElementById('palette').style.display = 'flex';
+      }
+      if (e.key === 'Escape') {
+        document.getElementById('palette').style.display = 'none';
+      }
+    });
+
+    // Close on click outside
+    document.getElementById('palette').addEventListener('click', e => {
+      if (e.target.id === 'palette') {
+        document.getElementById('palette').style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

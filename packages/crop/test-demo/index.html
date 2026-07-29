@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@input-kit/crop Showcase</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #10b981, #3b82f6);
+      min-height: 100vh;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      padding: 50px;
+      border-radius: 32px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.25);
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.2rem;
+      font-weight: 800;
+    }
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 40px;
+    }
+    .crop-area {
+      background: #f1f5f9;
+      border-radius: 20px;
+      height: 400px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .crop-overlay {
+      position: absolute;
+      border: 2px solid #fff;
+      box-shadow: 0 0 0 9999px rgba(0,0,0,0.5);
+      cursor: move;
+      display: flex;
+      flex-wrap: wrap;
+    }
+    .handle {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      background: #fff;
+      border: 2px solid #3b82f6;
+    }
+    .tl { top: -6px; left: -6px; cursor: nwse-resize; }
+    .tr { top: -6px; right: -6px; cursor: nesw-resize; }
+    .bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
+    .br { bottom: -6px; right: -6px; cursor: nwse-resize; }
+    
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .preview-box {
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 20px;
+      border: 1px solid #e2e8f0;
+    }
+    .preview-title {
+      font-weight: 700;
+      color: #64748b;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      margin-bottom: 15px;
+    }
+    .preview-circle {
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .preview-rect {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .controls {
+      margin-top: 30px;
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary { background: #3b82f6; color: #fff; }
+    .btn-secondary { background: #f1f5f9; color: #475569; }
+    .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none"
+        stroke="#1e293b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        style="vertical-align:middle;margin-right:10px">
+        <polyline points="6 20 6 14"/>
+        <polyline points="18 20 18 14"/>
+        <path d="M2 20h20"/>
+        <rect x="6" y="4" width="12" height="10" rx="1"/>
+      </svg>
+      Image Cropper
+    </h1>
+    
+    <div class="main-layout">
+      <div class="crop-area" id="cropArea">
+        <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" style="width: 100%; height: 100%; object-fit: cover;">
+        <div class="crop-overlay" id="overlay" style="width: 200px; height: 200px; top: 100px; left: 100px;">
+          <div class="handle tl"></div>
+          <div class="handle tr"></div>
+          <div class="handle bl"></div>
+          <div class="handle br"></div>
+        </div>
+      </div>
+
+      <div class="preview-panel">
+        <div class="preview-box">
+          <div class="preview-title">Avatar Preview</div>
+          <div class="preview-circle">
+            <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" id="prev1" style="width: 200%; position: relative; top: -50px; left: -50px;">
+          </div>
+        </div>
+        <div class="preview-box">
+          <div class="preview-title">Thumbnail Preview</div>
+          <div class="preview-rect">
+             <img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80" id="prev2" style="width: 150%; position: relative; top: -30px; left: -20px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-secondary">Reset</button>
+      <button class="btn btn-primary" onclick="alert('Image cropped successfully!')">Crop & Save</button>
+    </div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('overlay');
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+
+    overlay.addEventListener('mousedown', e => {
+      isDragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      initialX = overlay.offsetLeft;
+      initialY = overlay.offsetTop;
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      overlay.style.left = (initialX + dx) + 'px';
+      overlay.style.top = (initialY + dy) + 'px';
+      
+      // Update previews
+      document.getElementById('prev1').style.left = -(initialX + dx)/2 + 'px';
+      document.getElementById('prev1').style.top = -(initialY + dy)/2 + 'px';
+    });
+
+    document.addEventListener('mouseup', () => isDragging = false);
+  </script>
+</body>
+</html>
