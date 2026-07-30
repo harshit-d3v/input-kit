@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/markdown",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Markdown renderer",
   "keywords": [
     "react",

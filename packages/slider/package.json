@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/slider",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Accessible React slider primitives with single and range thumbs",
   "keywords": [
     "react",

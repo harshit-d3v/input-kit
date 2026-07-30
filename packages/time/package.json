@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/time",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Locale-aware relative time, countdown, and stopwatch utilities for React",
   "keywords": [
     "react",

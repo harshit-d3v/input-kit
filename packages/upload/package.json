@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/upload",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "React file upload primitives with drag-and-drop, previews, validation, and queues",
   "keywords": [
     "react",

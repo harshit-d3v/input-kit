@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/search",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Search input with debounce",
   "keywords": [
     "react",

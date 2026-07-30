@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/tabs",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Accessible React tabs with roving focus and compound primitives",
   "keywords": [
     "react",

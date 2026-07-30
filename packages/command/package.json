@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/command",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command palette",
   "keywords": [
     "react",

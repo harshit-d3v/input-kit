@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/tree",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Accessible React tree views with keyboard navigation, selection, and virtualization",
   "keywords": [
     "react",
