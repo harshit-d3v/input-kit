@@ -15,10 +15,11 @@ package's headline feature wrong in its default configuration. The full write-up
 section per package, is in [`REVIEW-2026-07-30.md`](REVIEW-2026-07-30.md); the
 summary is under "Fixed" below. `clipboard` was the only package with no defects found.
 
-That pass fixed behaviour, not coverage — it added no tests, so the section below is
-unchanged in substance.
+A follow-up pass then added regression suites to nine of the worst-affected packages
+and replaced every placeholder demo. **890 tests pass** and `npm run test` exits clean
+for the first time.
 
-## 1. 29 of 41 packages have no tests
+## 1. 20 of 41 packages have no tests
 
 Listed with their source volume in the README. These have working implementations
 and runnable demos but nothing guarding them.
@@ -29,14 +30,19 @@ fake coverage number, so those packages now honestly report zero tests. Their `t
 script passes with `--passWithNoTests`; packages that do have suites keep strict
 behaviour, so a vanished test file stays loud.
 
-Writing a real suite for one of these is the most useful contribution available.
-Start from the package's `test-demo/` to see the intended behaviour.
+`gauge`, `split`, `otp`, `date`, `currency`, `markdown`, `i18n`, `time` and
+`sparkline` gained suites aimed squarely at the defects the review found — the fill
+that rendered at 1%, the controlled-`sizes` render loop, the repeated `onComplete`,
+the dates that rolled over instead of failing, and so on. Writing one for a package
+still on the list is the most useful contribution available; start from its
+`test-demo/` to see the intended behaviour.
 
-## 2. Thirteen demos are placeholders
+## 2. Demos
 
-`chart`, `code`, `command`, `crop`, `currency`, `date`, `gauge`, `i18n`, `json`,
-`markdown`, `mask`, `menu`, `otp` have a demo that prints the package's export list
-instead of exercising it. Their pages on the docs site say so explicitly.
+Every package now has a demo that exercises it. The thirteen that used to print an
+export list — `chart`, `code`, `command`, `crop`, `currency`, `date`, `gauge`,
+`i18n`, `json`, `markdown`, `mask`, `menu`, `otp` — were replaced with interactive
+ones, several of which demonstrate the specific behaviour the review pass repaired.
 
 ## 3. `@input-kit/form` stores errors flat, not nested
 

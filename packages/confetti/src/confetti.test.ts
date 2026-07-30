@@ -1,16 +1,43 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { confetti, fireConfetti, celebrate } from './index';
 
+// The rAF stand-in has to be cancellable. It used to return a constant `1` and drop
+// the timeout handle, so `cancelAnimationFrame` could not stop anything: the confetti
+// loop kept scheduling frames past the end of the test and blew up against a
+// torn-down environment, failing the run even though every assertion passed.
+const pendingFrames = new Set<ReturnType<typeof setTimeout>>();
+
+const installRafMock = () => {
+  vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+    const id = setTimeout(() => {
+      pendingFrames.delete(id);
+      cb(Date.now());
+    }, 16);
+    pendingFrames.add(id);
+    return id as unknown as number;
+  });
+
+  vi.spyOn(window, 'cancelAnimationFrame').mockImplementation((handle) => {
+    const id = handle as unknown as ReturnType<typeof setTimeout>;
+    clearTimeout(id);
+    pendingFrames.delete(id);
+  });
+};
+
+const drainFrames = () => {
+  for (const id of pendingFrames) clearTimeout(id);
+  pendingFrames.clear();
+};
+
 describe('confetti', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
-    vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
-      setTimeout(cb, 16);
-      return 1;
-    });
+    document.body.replaceChildren();
+    installRafMock();
   });
 
   afterEach(() => {
+    drainFrames();
+    document.body.replaceChildren();
     vi.restoreAllMocks();
   });
 
@@ -61,8 +88,17 @@ describe('confetti', () => {
 });
 
 describe('fireConfetti', () => {
+  // This block had no rAF stand-in and no teardown at all, so its bursts ran on the
+  // real jsdom clock and kept animating after the suite finished.
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
+    installRafMock();
+  });
+
+  afterEach(() => {
+    drainFrames();
+    document.body.replaceChildren();
+    vi.restoreAllMocks();
   });
 
   it('should call confetti function', () => {
@@ -80,13 +116,16 @@ describe('fireConfetti', () => {
 
 describe('celebrate', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
+    document.body.replaceChildren();
     vi.useFakeTimers();
+    installRafMock();
   });
 
   afterEach(() => {
+    drainFrames();
     vi.restoreAllMocks();
     vi.useRealTimers();
+    document.body.replaceChildren();
   });
 
   it('should create multiple confetti bursts', () => {

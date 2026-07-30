@@ -82,7 +82,7 @@ export const packages: PackageEntry[] = [
       "useChart"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -135,7 +135,7 @@ export const packages: PackageEntry[] = [
       "THEMES"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -238,7 +238,7 @@ export const packages: PackageEntry[] = [
       "useRegisterCommand"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -253,8 +253,8 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 196,
-    "testLines": 102,
+    "srcLines": 205,
+    "testLines": 141,
     "hasTests": true,
     "exportNames": [
       "ConfettiOptions",
@@ -292,7 +292,7 @@ export const packages: PackageEntry[] = [
       "ImageCropper"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -334,8 +334,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 183,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 107,
+    "hasTests": true,
     "exportNames": [
       "CurrencyOptions",
       "formatCurrency",
@@ -346,7 +346,7 @@ export const packages: PackageEntry[] = [
       "useCurrency"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -362,8 +362,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 677,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 185,
+    "hasTests": true,
     "exportNames": [
       "DatePickerProps",
       "DateRangePickerProps",
@@ -384,7 +384,7 @@ export const packages: PackageEntry[] = [
       "DatePicker"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -480,8 +480,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 516,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 126,
+    "hasTests": true,
     "exportNames": [
       "GaugeProps",
       "LinearGaugeProps",
@@ -494,7 +494,7 @@ export const packages: PackageEntry[] = [
       "getColorForValue"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -553,8 +553,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 412,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 136,
+    "hasTests": true,
     "exportNames": [
       "TranslationValue",
       "Translations",
@@ -578,7 +578,7 @@ export const packages: PackageEntry[] = [
       "numberFormats"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -602,7 +602,7 @@ export const packages: PackageEntry[] = [
       "isValidJSON"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -617,9 +617,9 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 460,
-    "testLines": 0,
-    "hasTests": false,
+    "srcLines": 466,
+    "testLines": 152,
+    "hasTests": true,
     "exportNames": [
       "MarkdownProps",
       "MarkdownComponents",
@@ -630,7 +630,7 @@ export const packages: PackageEntry[] = [
       "parseInline"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -663,7 +663,7 @@ export const packages: PackageEntry[] = [
       "isComplete"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -696,7 +696,7 @@ export const packages: PackageEntry[] = [
       "menuItem"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -771,8 +771,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 451,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 137,
+    "hasTests": true,
     "exportNames": [
       "UseOtpInputOptions",
       "UseOtpInputReturn",
@@ -783,7 +783,7 @@ export const packages: PackageEntry[] = [
       "OtpInputCircle"
     ],
     "hasDemo": true,
-    "isStubDemo": true,
+    "isStubDemo": false,
     "deps": []
   },
   {
@@ -954,8 +954,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 660,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 130,
+    "hasTests": true,
     "exportNames": [
       "SparklineProps",
       "SparkBarProps",
@@ -984,8 +984,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 704,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 205,
+    "hasTests": true,
     "exportNames": [
       "SplitDirection",
       "SplitPaneProps",
@@ -1085,8 +1085,8 @@ export const packages: PackageEntry[] = [
       "headless"
     ],
     "srcLines": 782,
-    "testLines": 0,
-    "hasTests": false,
+    "testLines": 96,
+    "hasTests": true,
     "exportNames": [
       "TimeUnit",
       "TimeFormatOptions",
@@ -1360,7 +1360,7 @@ export const bySlug = new Map(packages.map((p) => [p.slug, p]));
 
 export const totals = {
   count: 41,
-  srcLines: 27709,
-  testLines: 10048,
-  tested: 12,
+  srcLines: 27724,
+  testLines: 11361,
+  tested: 21,
 };

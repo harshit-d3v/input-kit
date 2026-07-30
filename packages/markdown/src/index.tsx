@@ -51,11 +51,17 @@ function sanitizeUrl(url?: string): string | undefined {
   const trimmed = url.trim();
   if (!trimmed) return undefined;
 
-  // `//evil.com` is a protocol-relative URL, not an internal path — it navigates
-  // off-origin. Only a single leading slash counts as same-origin.
+  // Protocol-relative URLs (`//evil.com`, and the backslash form browsers also
+  // accept) navigate off-origin. They have to be rejected up front: excluding them
+  // from the internal-path branch below is not enough, because `new URL` resolves
+  // them against the base into a perfectly valid `https:` URL, which the
+  // absolute-URL branch would then approve.
+  if (/^[/\\]{2}/.test(trimmed)) return undefined;
+
+  // Genuinely same-origin references.
   if (
     trimmed.startsWith('#') ||
-    (trimmed.startsWith('/') && !trimmed.startsWith('//')) ||
+    trimmed.startsWith('/') ||
     trimmed.startsWith('./') ||
     trimmed.startsWith('../')
   ) {

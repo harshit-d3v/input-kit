@@ -98,6 +98,15 @@ export function confetti(options: ConfettiOptions = {}): (() => void) | undefine
   }
 
   function update() {
+    // Stop if the canvas has left the document — the page navigated, a host
+    // component unmounted, or a test environment was torn down. Without this the
+    // loop keeps scheduling frames and drawing into a canvas nobody can see, until
+    // every particle happens to expire.
+    if (!canvas.isConnected) {
+      cleanup();
+      return;
+    }
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     let activeParticles = 0;
