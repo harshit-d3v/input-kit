@@ -6,6 +6,8 @@ import type {
   FieldState,
   FieldValues,
   FormState,
+  Path,
+  PathValue,
   RegisterResult,
   UseFormOptions,
   UseFormReturn,
@@ -13,7 +15,9 @@ import type {
 } from './types.js';
 import {
   cloneObject,
+  getNestedValue,
   isFieldDirty,
+  setNestedValue,
   validateField,
   zodErrorToFieldErrors,
 } from './utils.js';
@@ -24,10 +28,10 @@ export function useForm<T extends FieldValues>(
   const { schema, defaultValues = {} as Partial<T>, mode = 'onSubmit', reValidateMode = 'onChange', shouldFocusError = true } = options;
 
   // Initialize refs
-  const fieldsRef = useRef<Map<keyof T, FieldState>>(new Map());
+  const fieldsRef = useRef<Map<Path<T>, FieldState>>(new Map());
   const valuesRef = useRef<T>(cloneObject(defaultValues) as T);
   const defaultValuesRef = useRef<T>(cloneObject(defaultValues) as T);
-  const fieldElementsRef = useRef<Map<keyof T, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>(new Map());
+  const fieldElementsRef = useRef<Map<Path<T>, HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>>(new Map());
   const subscribersRef = useRef<Set<() => void>>(new Set());
 
   // Initialize form state
@@ -67,7 +71,7 @@ export function useForm<T extends FieldValues>(
 
   // Validate a single field
   const validateFieldFn = useCallback(
-    async <K extends keyof T>(name: K): Promise<FieldError | undefined> => {
+    async <K extends Path<T>>(name: K): Promise<FieldError | undefined> => {
       const error = validateField(schema, valuesRef.current, name);
       return error;
     },
@@ -91,12 +95,15 @@ export function useForm<T extends FieldValues>(
   }, [schema, updateFormState]);
 
   // Set field value
-  const setFieldValue = useCallback(<K extends keyof T>(name: K, value: T[K]) => {
-    valuesRef.current[name] = value;
+  // Written through setNestedValue so dotted paths resolve. Flat indexing would
+  // create a literal "members.0.name" key rather than reaching into the array,
+  // which is what made field-array registration silently do nothing.
+  const setFieldValue = useCallback(<K extends Path<T>>(name: K, value: PathValue<T, K>) => {
+    setNestedValue(valuesRef.current, name as string, value);
   }, []);
 
   // Set field dirty state
-  const setFieldDirty = useCallback(<K extends keyof T>(name: K, isDirty: boolean) => {
+  const setFieldDirty = useCallback(<K extends Path<T>>(name: K, isDirty: boolean) => {
     const currentFieldState = fieldsRef.current.get(name) || { isDirty: false, isTouched: false, isValidating: false };
     fieldsRef.current.set(name, { ...currentFieldState, isDirty });
 
@@ -110,7 +117,7 @@ export function useForm<T extends FieldValues>(
   }, [notifySubscribers]);
 
   // Set field touched state
-  const setFieldTouched = useCallback(<K extends keyof T>(name: K, isTouched: boolean) => {
+  const setFieldTouched = useCallback(<K extends Path<T>>(name: K, isTouched: boolean) => {
     const currentFieldState = fieldsRef.current.get(name) || { isDirty: false, isTouched: false, isValidating: false };
     fieldsRef.current.set(name, { ...currentFieldState, isTouched });
 
@@ -124,7 +131,7 @@ export function useForm<T extends FieldValues>(
 
   // Register a field
   const register = useCallback(
-    (name: keyof T): RegisterResult => {
+    (name: Path<T>): RegisterResult => {
       const fieldName = name as string;
 
       // Initialize field state if not exists
@@ -143,7 +150,7 @@ export function useForm<T extends FieldValues>(
             ? (e.target as HTMLInputElement).checked 
             : e.target.value;
           
-          setFieldValue(name, value as T[keyof T]);
+          setFieldValue(name, value as PathValue<T, Path<T>>);
 
           const isDirty = isFieldDirty(defaultValuesRef.current, valuesRef.current, name);
           setFieldDirty(name, isDirty);
@@ -244,7 +251,7 @@ export function useForm<T extends FieldValues>(
 
           // Focus first error field
           if (shouldFocusError) {
-            const firstErrorKey = Object.keys(errors)[0] as keyof T;
+            const firstErrorKey = Object.keys(errors)[0] as Path<T>;
             const element = fieldElementsRef.current.get(firstErrorKey);
             if (element) {
               element.focus();
@@ -257,17 +264,17 @@ export function useForm<T extends FieldValues>(
   );
 
   // Watch a field or entire form
-  const watch = useCallback(<K extends keyof T>(name?: K): K extends keyof T ? T[K] : T => {
+  const watch = useCallback(<K extends Path<T>>(name?: K): K extends Path<T> ? PathValue<T, K> : T => {
     if (name) {
-      return valuesRef.current[name] as K extends keyof T ? T[K] : T;
+      return getNestedValue(valuesRef.current, name as string) as K extends Path<T> ? PathValue<T, K> : T;
     }
-    return cloneObject(valuesRef.current) as K extends keyof T ? T[K] : T;
+    return cloneObject(valuesRef.current) as K extends Path<T> ? PathValue<T, K> : T;
   }, []);
 
   // Set value programmatically
-  const setValue = useCallback(<K extends keyof T>(
+  const setValue = useCallback(<K extends Path<T>>(
     name: K,
-    value: T[K],
+    value: PathValue<T, K>,
     setValueOptions: { shouldValidate?: boolean; shouldDirty?: boolean; shouldTouch?: boolean } = {}
   ) => {
     const { shouldValidate = false, shouldDirty = true, shouldTouch = false } = setValueOptions;
@@ -301,15 +308,15 @@ export function useForm<T extends FieldValues>(
   }, [notifySubscribers, setFieldDirty, setFieldTouched, setFieldValue, updateFormState, validateFieldFn]);
 
   // Get values
-  const getValues = useCallback(<K extends keyof T>(name?: K): K extends keyof T ? T[K] : T => {
+  const getValues = useCallback(<K extends Path<T>>(name?: K): K extends Path<T> ? PathValue<T, K> : T => {
     if (name) {
-      return valuesRef.current[name] as K extends keyof T ? T[K] : T;
+      return getNestedValue(valuesRef.current, name as string) as K extends Path<T> ? PathValue<T, K> : T;
     }
-    return cloneObject(valuesRef.current) as K extends keyof T ? T[K] : T;
+    return cloneObject(valuesRef.current) as K extends Path<T> ? PathValue<T, K> : T;
   }, []);
 
   // Set error manually
-  const setError = useCallback(<K extends keyof T>(name: K, error: FieldError) => {
+  const setError = useCallback(<K extends Path<T>>(name: K, error: FieldError) => {
     // Use functional update to avoid stale closure on formState.errors
     setFormState((prev) => ({
       ...prev,
@@ -319,7 +326,7 @@ export function useForm<T extends FieldValues>(
   }, [notifySubscribers]);
 
   // Clear errors
-  const clearErrors = useCallback(<K extends keyof T>(name?: K | K[]) => {
+  const clearErrors = useCallback(<K extends Path<T>>(name?: K | K[]) => {
     if (!name) {
       updateFormState({ errors: {} as FieldErrors<T> });
       return;
@@ -359,7 +366,7 @@ export function useForm<T extends FieldValues>(
   }, [updateFormState]);
 
   // Trigger validation
-  const trigger = useCallback(async <K extends keyof T>(name?: K | K[]): Promise<boolean> => {
+  const trigger = useCallback(async <K extends Path<T>>(name?: K | K[]): Promise<boolean> => {
     if (!name) {
       const { valid, errors } = await validateForm();
       updateFormState({ errors, isValid: valid });

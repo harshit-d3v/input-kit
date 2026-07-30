@@ -1,56 +1,33 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useStorage } from './internal/storage.js';
+import type { UseStorageOptions, UseStorageReturn } from './internal/storage.js';
 
 /**
- * Persist state to sessionStorage
- * @param key The sessionStorage key
- * @param initialValue The initial value
- * @returns A stateful value and a function to update it
- * 
+ * Persist state to sessionStorage for the lifetime of the tab.
+ *
+ * @param key sessionStorage key to read and write
+ * @param initialValue value used when the key is absent, and restored by `remove`
+ * @param options custom `serializer` / `deserializer`; both default to JSON
+ * @returns `[value, setValue, remove]`
+ *
  * @example
- * const [session, setSession] = useSessionStorage('session', { user: null });
- * 
- * // Updates sessionStorage automatically
- * setSession({ user: { id: 1 } });
+ * const [draft, setDraft, clearDraft] = useSessionStorage('draft', '');
+ *
+ * @example Storing a type JSON cannot round-trip on its own
+ * const [seen, setSeen] = useSessionStorage('seen', new Map<string, number>(), {
+ *   serializer: (m) => JSON.stringify([...m.entries()]),
+ *   deserializer: (raw) => new Map(JSON.parse(raw)),
+ * });
+ *
+ * @remarks
+ * Unlike {@link useLocalStorage} this does not respond to `storage` events.
+ * sessionStorage is scoped to one tab, so a `storage` event from another tab
+ * refers to a different store entirely and must be ignored. Instances sharing a
+ * key within the same tab are still kept in sync.
  */
 export function useSessionStorage<T>(
   key: string,
-  initialValue: T
-): [T, (value: T | ((prev: T) => T)) => void] {
-  const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') return initialValue;
-    
-    try {
-      const item = window.sessionStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading sessionStorage key "${key}":`, error);
-      return initialValue;
-    }
-  }, [key, initialValue]);
-
-  const [storedValue, setStoredValue] = useState<T>(readValue);
-  const valueRef = useRef(storedValue);
-
-  useEffect(() => {
-    valueRef.current = storedValue;
-  }, [storedValue]);
-
-  const setValue = useCallback(
-    (value: T | ((prev: T) => T)) => {
-      try {
-        const valueToStore = value instanceof Function ? value(valueRef.current) : value;
-        valueRef.current = valueToStore;
-        setStoredValue(valueToStore);
-        
-        if (typeof window !== 'undefined') {
-          window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
-        }
-      } catch (error) {
-        console.warn(`Error setting sessionStorage key "${key}":`, error);
-      }
-    },
-    [key]
-  );
-
-  return [storedValue, setValue];
+  initialValue: T,
+  options: UseStorageOptions<T> = {},
+): UseStorageReturn<T> {
+  return useStorage('sessionStorage', key, initialValue, options, false);
 }

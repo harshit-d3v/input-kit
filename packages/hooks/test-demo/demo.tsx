@@ -5,7 +5,7 @@
  * Run with: npx tsx test-demo/demo.tsx
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   useDebounce,
   useThrottle,
@@ -16,7 +16,7 @@ import {
   useNetworkStatus,
   useClipboard,
   useClickOutside,
-  useKeyPress,
+  useKeyPressState,
 } from '../src/index';
 
 // Demo 1: useDebounce
@@ -42,13 +42,17 @@ function DebounceExample() {
 
 // Demo 2: useThrottle
 function ThrottleExample() {
-  const [count, setCount] = useState(0);
   const [clickCount, setClickCount] = useState(0);
-  const throttledCount = useThrottle(count, 1000);
+  const [throttledCount, setThrottledCount] = useState(0);
+
+  // useThrottle throttles a *function*: at most one call per second, plus a
+  // trailing call carrying whatever the last value was.
+  const publish = useThrottle((value: number) => setThrottledCount(value), 1000);
 
   const handleClick = () => {
-    setCount((c) => c + 1);
-    setClickCount((c) => c + 1);
+    const next = clickCount + 1;
+    setClickCount(next);
+    publish(next);
   };
 
   return (
@@ -147,20 +151,20 @@ function PreviousExample() {
 
 // Demo 6: useCountdown
 function CountdownExample() {
-  const { seconds, start, stop, reset, isRunning } = useCountdown(10);
+  const { timeLeft, start, pause, reset, isRunning } = useCountdown(10);
 
   return (
     <div>
       <h3>useCountdown</h3>
       <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px' }}>
-        {seconds}
+        {timeLeft}
       </div>
       <div style={{ display: 'flex', gap: '10px' }}>
         <button onClick={start} disabled={isRunning} style={{ padding: '10px 20px' }}>
           Start
         </button>
-        <button onClick={stop} disabled={!isRunning} style={{ padding: '10px 20px' }}>
-          Stop
+        <button onClick={pause} disabled={!isRunning} style={{ padding: '10px 20px' }}>
+          Pause
         </button>
         <button onClick={reset} style={{ padding: '10px 20px' }}>
           Reset
@@ -222,9 +226,11 @@ function ClipboardExample() {
 // Demo 9: useClickOutside
 function ClickOutsideExample() {
   const [isOpen, setIsOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  
-  useClickOutside(ref, () => setIsOpen(false));
+
+  // The hook owns the ref and hands it back — attach it to whatever counts as
+  // "inside". Listening only while open avoids the click that opens it also
+  // closing it.
+  const ref = useClickOutside<HTMLDivElement>(() => setIsOpen(false), { enabled: isOpen });
 
   return (
     <div>
@@ -252,9 +258,11 @@ function ClickOutsideExample() {
 
 // Demo 10: useKeyPress
 function KeyPressExample() {
-  const isEnterPressed = useKeyPress('Enter');
-  const isEscapePressed = useKeyPress('Escape');
-  const isSpacePressed = useKeyPress(' ');
+  // useKeyPressState reports whether a key is *currently held*. Use useKeyPress
+  // when you want to react to the press instead.
+  const isEnterPressed = useKeyPressState('Enter');
+  const isEscapePressed = useKeyPressState('Escape');
+  const isSpacePressed = useKeyPressState(' ');
 
   return (
     <div>

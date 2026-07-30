@@ -1,5 +1,5 @@
 import type { z } from 'zod';
-import type { FieldError, FieldErrors, FieldValues } from './types.js';
+import type { FieldError, FieldErrors, FieldValues, Path } from './types.js';
 
 export function zodErrorToFieldErrors<T extends FieldValues>(
   error: z.ZodError<T>
@@ -7,7 +7,9 @@ export function zodErrorToFieldErrors<T extends FieldValues>(
   const errors: FieldErrors<T> = {};
 
   for (const issue of error.issues) {
-    const path = issue.path.join('.') as keyof T;
+    // Zod reports ['members', 1, 'name']; joining gives the dotted key errors are
+    // stored under, which is why FieldErrors is keyed by Path rather than keyof T.
+    const path = issue.path.join('.') as Path<T>;
     errors[path] = {
       message: issue.message,
       type: issue.code,
@@ -56,10 +58,12 @@ export function setNestedValue<T extends FieldValues>(
 export function isFieldDirty<T extends FieldValues>(
   defaultValues: T,
   currentValues: T,
-  name: keyof T
+  name: Path<T>
 ): boolean {
-  const defaultValue = defaultValues[name];
-  const currentValue = currentValues[name];
+  // Read through the path rather than indexing directly: a nested field would
+  // otherwise compare undefined against undefined and always report itself clean.
+  const defaultValue = getNestedValue(defaultValues, name as string);
+  const currentValue = getNestedValue(currentValues, name as string);
 
   if (typeof defaultValue !== typeof currentValue) {
     return true;
@@ -102,7 +106,7 @@ export function generateId(): string {
 export function validateField<T extends FieldValues>(
   schema: z.ZodType<T>,
   values: T,
-  name: keyof T
+  name: Path<T>
 ): FieldError | undefined {
   const result = schema.safeParse(values);
 

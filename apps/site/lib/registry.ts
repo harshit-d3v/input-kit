@@ -179,7 +179,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "combobox",
     "name": "@input-kit/combobox",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Autocomplete combobox",
     "keywords": [
       "react",
@@ -188,7 +188,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 1139,
+    "srcLines": 1202,
     "testLines": 1018,
     "hasTests": true,
     "exportNames": [
@@ -253,7 +253,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 165,
+    "srcLines": 196,
     "testLines": 102,
     "hasTests": true,
     "exportNames": [
@@ -390,7 +390,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "dropzone",
     "name": "@input-kit/dropzone",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "File dropzone",
     "keywords": [
       "react",
@@ -399,7 +399,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 555,
+    "srcLines": 576,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -422,7 +422,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "form",
     "name": "@input-kit/form",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Form validation with Zod",
     "keywords": [
       "react",
@@ -431,7 +431,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 960,
+    "srcLines": 1050,
     "testLines": 1223,
     "hasTests": true,
     "exportNames": [
@@ -500,7 +500,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "hooks",
     "name": "@input-kit/hooks",
-    "version": "1.0.1",
+    "version": "2.0.0",
     "description": "Essential React hooks collection for @input-kit",
     "keywords": [
       "react",
@@ -513,8 +513,8 @@ export const packages: PackageEntry[] = [
       "media-query",
       "intersection-observer"
     ],
-    "srcLines": 1048,
-    "testLines": 2559,
+    "srcLines": 1800,
+    "testLines": 2566,
     "hasTests": true,
     "exportNames": [
       "useDebounce",
@@ -532,6 +532,7 @@ export const packages: PackageEntry[] = [
       "useResizeObserver",
       "useClickOutside",
       "useKeyPress",
+      "useKeyPressState",
       "useKeyPressMultiple",
       "useScrollPosition"
     ],
@@ -1005,7 +1006,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "table",
     "name": "@input-kit/table",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Headless React data table with sorting, filtering, selection, and virtualization",
     "keywords": [
       "react",
@@ -1014,7 +1015,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 1522,
+    "srcLines": 1546,
     "testLines": 976,
     "hasTests": true,
     "exportNames": [
@@ -1164,7 +1165,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "toast",
     "name": "@input-kit/toast",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "Headless toast notification library for React",
     "keywords": [
       "toast",
@@ -1359,7 +1360,7 @@ export const bySlug = new Map(packages.map((p) => [p.slug, p]));
 
 export const totals = {
   count: 41,
-  srcLines: 25794,
-  testLines: 10041,
+  srcLines: 26775,
+  testLines: 10048,
   tested: 12,
 };

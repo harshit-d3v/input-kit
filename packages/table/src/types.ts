@@ -34,9 +34,22 @@ export interface Column<T = unknown> {
   className?: string;
 }
 
+/**
+ * The minimum a row has to look like.
+ *
+ * Deliberately just an optional `id`, with no `[key: string]: unknown`. An index
+ * signature here would mean no ordinary interface satisfies the constraint —
+ * `interface User { id: number; name: string }` is not assignable to a type with an
+ * index signature — so `Table<T>` would silently fall back to this default and every
+ * cell value would arrive as `unknown`. Callers would have had to add
+ * `[key: string]: unknown` to their own domain types, giving up the type safety the
+ * table is supposed to provide.
+ *
+ * Columns addressed by string `key` are read through a cast internally instead. Rows
+ * with no `id` are fine — pass `getRowId` to say what identifies them.
+ */
 export interface TableRow {
-  id: string | number;
-  [key: string]: unknown;
+  id?: string | number;
 }
 
 export interface UseTableOptions<T = TableRow> {

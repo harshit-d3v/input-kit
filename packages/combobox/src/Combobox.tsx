@@ -1,6 +1,6 @@
 import { forwardRef, useMemo, useCallback } from 'react';
 import type { ReactElement, Ref } from 'react';
-import type { ComboboxProps, ComboboxOption } from './types.js';
+import type { ComboboxProps, ComboboxOption, UseComboboxProps } from './types.js';
 import { useCombobox } from './useCombobox.js';
 import { ComboboxOption as ComboboxOptionComponent } from './ComboboxOption.js';
 import { getOptionValue, findOptionIndexByValue, generateId } from './utils.js';
@@ -63,6 +63,14 @@ const ComboboxImpl = forwardRef<HTMLDivElement, ComboboxProps<unknown>>(
       filterFn,
     } = props;
 
+    /**
+     * `onChange` and `multi` are discriminated on each other in the public type, so
+     * on the un-narrowed union `onChange` accepts only the intersection of both
+     * parameter types and `multi` is a plain boolean. Both are widened once here and
+     * passed on, rather than casting at each use.
+     */
+    const emit = onChange as (value: unknown | unknown[] | null) => void;
+
     // Generate unique ID
     const id = useMemo(() => idProp || generateId('combobox'), [idProp]);
 
@@ -85,7 +93,7 @@ const ComboboxImpl = forwardRef<HTMLDivElement, ComboboxProps<unknown>>(
       options: staticOptions,
       loadOptions,
       value,
-      onChange,
+      onChange: emit,
       multi,
       creatable,
       createLabel,
@@ -95,7 +103,7 @@ const ComboboxImpl = forwardRef<HTMLDivElement, ComboboxProps<unknown>>(
       loading: externalLoading,
       onInputChange,
       id,
-    });
+    } as UseComboboxProps<unknown>);
 
     // Get selected options for display
     const selectedOptions = useMemo(() => {
@@ -121,9 +129,9 @@ const ComboboxImpl = forwardRef<HTMLDivElement, ComboboxProps<unknown>>(
       e.stopPropagation();
       if (multi && Array.isArray(value)) {
         const newValue = value.filter(v => v !== optionValue);
-        onChange(newValue.length > 0 ? newValue : []);
+        emit(newValue.length > 0 ? newValue : []);
       }
-    }, [multi, value, onChange]);
+    }, [multi, value, emit]);
 
     // Render selected value(s)
     const renderSelectedValue = useCallback((option: ComboboxOption<unknown>) => {

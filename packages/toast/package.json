@@ -1,6 +1,6 @@
 {
   "name": "@input-kit/toast",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Headless toast notification library for React",
   "keywords": [
     "toast",

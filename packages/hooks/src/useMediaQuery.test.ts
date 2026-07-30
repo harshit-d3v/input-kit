@@ -51,11 +51,11 @@ describe('useMediaQuery', () => {
     // @ts-expect-error - simulate SSR
     window.matchMedia = undefined;
 
-    // Need to re-import to get fresh module without the mock
-    const { useMediaQuery: useMediaQueryFresh } = require('./useMediaQuery');
-    
-    const { result } = renderHook(() => 
-      useMediaQueryFresh('(min-width: 768px)', { defaultValue: true, initializeWithValue: false })
+    // The mock being removed is on window.matchMedia, not on the module, so the
+    // already-imported hook is the right thing to call. `require` is also
+    // unavailable in this ESM test environment.
+    const { result } = renderHook(() =>
+      useMediaQuery('(min-width: 768px)', { defaultValue: true, initializeWithValue: false })
     );
     
     expect(result.current).toBe(true);

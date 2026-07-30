@@ -24,6 +24,17 @@ const sampleUsers: User[] = [
   { id: 10, name: 'Henry Davis', email: 'henry@example.com', role: 'Editor', status: 'active', joinDate: '2023-10-25' },
 ];
 
+// Built once at module scope rather than inline in JSX: 250 rows regenerated on
+// every render would defeat the point of the virtualization being demonstrated.
+const virtualizedUsers: User[] = Array.from({ length: 250 }, (_, index) => ({
+  id: index + 1,
+  name: `Row ${index + 1}`,
+  email: `row-${index + 1}@example.com`,
+  role: index % 3 === 0 ? 'Admin' : index % 3 === 1 ? 'Editor' : 'Viewer',
+  status: index % 4 === 0 ? 'inactive' : 'active',
+  joinDate: `2024-01-${String((index % 28) + 1).padStart(2, '0')}`,
+}));
+
 const columns: Column<User>[] = [
   { key: 'id', header: 'ID', width: 60, sortable: true },
   { key: 'name', header: 'Name', sortable: true },
@@ -83,14 +94,7 @@ export function Demo() {
       <section style={{ padding: '1.5rem', border: '1px solid #e2e8f0', borderRadius: '1rem' }}>
         <h2 style={{ marginBottom: '1rem' }}>Virtualized Dataset</h2>
         <Table
-          data={Array.from({ length: 250 }, (_, index) => ({
-            id: index + 1,
-            name: `Row ${index + 1}`,
-            email: `row-${index + 1}@example.com`,
-            role: index % 3 === 0 ? 'Admin' : index % 3 === 1 ? 'Editor' : 'Viewer',
-            status: index % 4 === 0 ? 'inactive' : 'active',
-            joinDate: `2024-01-${String((index % 28) + 1).padStart(2, '0')}`,
-          }))}
+          data={virtualizedUsers}
           columns={columns}
           sortable
           virtualized

@@ -17,19 +17,52 @@ export interface ComboboxOption<T = unknown> {
 }
 
 /**
- * Base props for combobox
+ * Single-select mode, the default. One value or nothing.
+ */
+export interface SingleSelection<T = unknown> {
+  multi?: false;
+  /** The selected value, or null. */
+  value: T | null;
+  /**
+   * Called with the new value, or null when cleared.
+   *
+   * `NoInfer` keeps this from being an inference site. Passing a `useState` setter
+   * directly — the common case — would otherwise let TypeScript infer `T` from
+   * `SetStateAction<string>`, landing on `string | ((prev: string) => string)`
+   * instead of `string`. `options` and `value` decide `T`; this only consumes it.
+   */
+  onChange: (value: NoInfer<T> | null) => void;
+}
+
+/**
+ * Multi-select mode. Always an array, empty rather than null when cleared.
+ */
+export interface MultiSelection<T = unknown> {
+  multi: true;
+  /** The selected values. */
+  value: T[];
+  /** Called with the full new selection. See the note on {@link SingleSelection.onChange}. */
+  onChange: (value: NoInfer<T>[]) => void;
+}
+
+/**
+ * `value` and `onChange` discriminated on `multi`.
+ *
+ * Typing `onChange` as `(value: T | T[] | null) => void` in both modes would make
+ * every single-select caller narrow a value that can never be an array, just to
+ * satisfy the compiler. Splitting on `multi` means `onChange` says what actually
+ * arrives: `T | null` normally, `T[]` when `multi` is set.
+ */
+export type ComboboxSelection<T = unknown> = SingleSelection<T> | MultiSelection<T>;
+
+/**
+ * Base props for combobox, excluding the selection shape — see {@link ComboboxSelection}.
  */
 export interface BaseComboboxProps<T = unknown> {
-  /** Current value (single or array for multi-select) */
-  value: T | T[] | null;
-  /** Callback when selection changes */
-  onChange: (value: T | T[] | null) => void;
   /** Placeholder text */
   placeholder?: string;
   /** Whether the combobox is disabled */
   disabled?: boolean;
-  /** Whether to allow multiple selections */
-  multi?: boolean;
   /** Whether to allow creating new options */
   creatable?: boolean;
   /** Custom create option label */
@@ -81,9 +114,11 @@ export interface AsyncComboboxProps<T = unknown> extends BaseComboboxProps<T> {
 }
 
 /**
- * Combined combobox props
+ * Combined combobox props: static or async options, crossed with single or multi
+ * selection.
  */
-export type ComboboxProps<T = unknown> = StaticComboboxProps<T> | AsyncComboboxProps<T>;
+export type ComboboxProps<T = unknown> = (StaticComboboxProps<T> | AsyncComboboxProps<T>) &
+  ComboboxSelection<T>;
 
 /**
  * Return type for useCombobox hook
@@ -146,17 +181,11 @@ export interface UseComboboxReturn<T = unknown> {
 /**
  * Props for useCombobox hook
  */
-export interface UseComboboxProps<T = unknown> {
+export interface UseComboboxOwnProps<T = unknown> {
   /** Static options */
   options?: ComboboxOption<T>[];
   /** Async loader function */
   loadOptions?: (query: string) => Promise<ComboboxOption<T>[]> | ComboboxOption<T>[];
-  /** Current value */
-  value: T | T[] | null;
-  /** Change handler */
-  onChange: (value: T | T[] | null) => void;
-  /** Whether multi-select */
-  multi?: boolean;
   /** Whether creatable */
   creatable?: boolean;
   /** Custom create label */
@@ -174,6 +203,11 @@ export interface UseComboboxProps<T = unknown> {
   /** ID prefix for accessibility */
   id?: string;
 }
+
+/**
+ * Props for the useCombobox hook: its own options crossed with the selection shape.
+ */
+export type UseComboboxProps<T = unknown> = UseComboboxOwnProps<T> & ComboboxSelection<T>;
 
 /**
  * Props for ComboboxOption component

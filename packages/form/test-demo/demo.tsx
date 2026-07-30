@@ -154,7 +154,11 @@ function FieldArrayExample() {
           {errors.teamName && <div style={errorStyle}>{errors.teamName.message}</div>}
         </div>
 
-        {fields.map((field, i) => (
+        {fields.map((field, i) => {
+          const nameError = errors[`members.${i}.name`];
+          const emailError = errors[`members.${i}.email`];
+
+          return (
           <div key={field.id} style={{ padding: '12px', marginBottom: '8px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
               <strong style={{ fontSize: '13px' }}>Member {i + 1}</strong>
@@ -166,16 +170,19 @@ function FieldArrayExample() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
-                <input {...register(`members.${i}.name`)} placeholder="Name" style={inputStyle(!!(errors.members?.[i]?.name))} />
-                {errors.members?.[i]?.name && <div style={errorStyle}>{errors.members[i].name!.message}</div>}
+                {/* Errors are keyed by the same dotted path used to register the
+                    field, so a member error reads as errors['members.0.name']. */}
+                <input {...register(`members.${i}.name`)} placeholder="Name" style={inputStyle(!!nameError)} />
+                {nameError && <div style={errorStyle}>{nameError.message}</div>}
               </div>
               <div>
-                <input {...register(`members.${i}.email`)} placeholder="Email" style={inputStyle(!!(errors.members?.[i]?.email))} />
-                {errors.members?.[i]?.email && <div style={errorStyle}>{errors.members[i].email!.message}</div>}
+                <input {...register(`members.${i}.email`)} placeholder="Email" style={inputStyle(!!emailError)} />
+                {emailError && <div style={errorStyle}>{emailError.message}</div>}
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
           <button type="button" onClick={() => append({ name: '', email: '' })} style={{ padding: '8px 16px' }}>

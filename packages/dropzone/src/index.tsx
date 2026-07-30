@@ -61,7 +61,10 @@ export interface FileError {
 }
 
 export interface UseDropzoneReturn {
+  /** Files that passed validation, in the order they were accepted. */
   files: FileWithPreview[];
+  /** Files rejected by the most recent drop, each with the reasons why. */
+  rejectedFiles: FileRejection[];
   isDragActive: boolean;
   isDragAccept: boolean;
   isDragReject: boolean;
@@ -86,7 +89,10 @@ export interface UseDropzoneReturn {
   };
   open: () => void;
   removeFile: (id: string) => void;
+  /** Remove all accepted files and clear any rejections. */
   clearFiles: () => void;
+  /** Clear rejections only, leaving accepted files in place. */
+  clearRejections: () => void;
 }
 
 export interface DropzoneProps {
@@ -158,6 +164,10 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
+  // Rejections were previously computed and handed to onDropRejected, then thrown
+  // away. Callers that want to render "3 files were rejected, here is why" should not
+  // have to mirror that into their own state.
+  const [rejectedFiles, setRejectedFiles] = useState<FileRejection[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
   const [isDragAccept, setIsDragAccept] = useState(false);
   const [isDragReject, setIsDragReject] = useState(false);
@@ -229,7 +239,10 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
       onDropAccepted?.(accepted);
     }
 
-    // Handle rejected files
+    // Replace rather than append: rejections describe the most recent drop, so
+    // stale ones from an earlier attempt would be misleading.
+    setRejectedFiles(rejected);
+
     if (rejected.length > 0) {
       onDropRejected?.(rejected);
     }
@@ -337,7 +350,13 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
       }
     });
     setFiles([]);
+    setRejectedFiles([]);
   }, [files]);
+
+  /** Dismiss the rejection messages without touching the accepted files. */
+  const clearRejections = useCallback(() => {
+    setRejectedFiles([]);
+  }, []);
 
   const getRootProps = useCallback(() => ({
     onDragEnter: handleDragEnter,
@@ -362,6 +381,7 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
 
   return {
     files,
+    rejectedFiles,
     isDragActive,
     isDragAccept,
     isDragReject,
@@ -370,6 +390,7 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
     open,
     removeFile,
     clearFiles,
+    clearRejections,
   };
 }
 

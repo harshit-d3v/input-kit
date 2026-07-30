@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface NetworkInformationLike extends EventTarget {
   rtt?: number;
+  /** Measured connection quality: `'slow-2g'`, `'2g'`, `'3g'`, `'4g'`. */
   effectiveType?: string;
+  /** Physical connection type: `'wifi'`, `'cellular'`, `'ethernet'`, … */
+  type?: string;
   downlink?: number;
   saveData?: boolean;
 }
@@ -13,95 +16,104 @@ type NavigatorWithConnection = Navigator & {
   webkitConnection?: NetworkInformationLike;
 };
 
-interface NetworkStatus {
+export interface NetworkStatus {
+  /** Whether the browser believes it is online. */
   online: boolean;
+  /** When `online` last changed. Undefined if it has not changed since mount. */
   since: Date | undefined;
+  /** Estimated round-trip time in ms. */
   rtt: number | undefined;
+  /** Measured connection quality: `'slow-2g'`, `'2g'`, `'3g'`, `'4g'`. */
+  effectiveType: string | undefined;
+  /** Physical connection type: `'wifi'`, `'cellular'`, `'ethernet'`, … */
   type: string | undefined;
+  /** Estimated downlink speed in Mbps. */
   downlink: number | undefined;
+  /** Whether the user has asked for reduced data usage. */
   saveData: boolean | undefined;
 }
 
+function getConnection(): NetworkInformationLike | undefined {
+  if (typeof navigator === 'undefined') return undefined;
+  const nav = navigator as NavigatorWithConnection;
+  return nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
+}
+
+function readConnection(): Omit<NetworkStatus, 'online' | 'since'> {
+  const connection = getConnection();
+  return {
+    rtt: connection?.rtt,
+    effectiveType: connection?.effectiveType,
+    type: connection?.type,
+    downlink: connection?.downlink,
+    saveData: connection?.saveData,
+  };
+}
+
 /**
- * Track network connection status
- * @returns Network status object
- * 
+ * Track connectivity and, where the browser exposes it, connection quality.
+ *
+ * @returns `{ online, since, rtt, effectiveType, type, downlink, saveData }`
+ *
  * @example
- * const { online, since } = useNetworkStatus();
- * 
- * return <div>{online ? 'Online' : 'Offline since ' + since}</div>;
+ * const { online, effectiveType, saveData } = useNetworkStatus();
+ * if (!online) return <Offline />;
+ * if (saveData || effectiveType === '2g') return <LightweightView />;
+ *
+ * @remarks
+ * `type` and `effectiveType` are different things, and both are reported. `type` is
+ * the physical link (`'wifi'`, `'cellular'`); `effectiveType` is measured throughput
+ * expressed as a generation (`'4g'`, `'3g'`). A good phone on cellular can be
+ * `type: 'cellular'` with `effectiveType: '4g'`, and bad hotel wifi can be
+ * `type: 'wifi'` with `effectiveType: '2g'` — so decisions about how much to load
+ * belong on `effectiveType`, not `type`.
+ *
+ * Everything but `online` is undefined outside Chromium, where the Network
+ * Information API is unimplemented.
  */
 export function useNetworkStatus(): NetworkStatus {
-  const [status, setStatus] = useState<NetworkStatus>({
-    online: typeof navigator !== 'undefined' ? navigator.onLine : true,
-    since: typeof navigator !== 'undefined' && !navigator.onLine ? new Date() : undefined,
-    rtt: undefined,
-    type: undefined,
-    downlink: undefined,
-    saveData: undefined,
-  });
+  const [status, setStatus] = useState<NetworkStatus>(() => ({
+    online: typeof navigator === 'undefined' ? true : navigator.onLine,
+    since: undefined,
+    ...readConnection(),
+  }));
+
+  const sync = useCallback((online?: boolean) => {
+    setStatus((prev) => {
+      const nextOnline = online ?? (typeof navigator === 'undefined' ? true : navigator.onLine);
+      return {
+        ...prev,
+        online: nextOnline,
+        // Only stamp a time when the state actually flipped, so `since` means
+        // "since it changed" rather than "since the last connection event".
+        since: nextOnline === prev.online ? prev.since : new Date(),
+        ...readConnection(),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const navigatorWithConnection = navigator as NavigatorWithConnection;
-    const connection =
-      navigatorWithConnection.connection ??
-      navigatorWithConnection.mozConnection ??
-      navigatorWithConnection.webkitConnection;
+    const onOnline = () => sync(true);
+    const onOffline = () => sync(false);
+    const onChange = () => sync();
 
-    const updateNetworkInfo = () => {
-      setStatus((prev) => ({
-        ...prev,
-        online: navigator.onLine,
-        rtt: connection?.rtt,
-        type: connection?.effectiveType,
-        downlink: connection?.downlink,
-        saveData: connection?.saveData,
-      }));
-    };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
 
-    const handleOnline = () => {
-      setStatus((prev) => ({
-        ...prev,
-        online: true,
-        since: new Date(),
-        rtt: connection?.rtt,
-        type: connection?.effectiveType,
-        downlink: connection?.downlink,
-        saveData: connection?.saveData,
-      }));
-    };
+    const connection = getConnection();
+    connection?.addEventListener('change', onChange);
 
-    const handleOffline = () => {
-      setStatus((prev) => ({
-        ...prev,
-        online: false,
-        since: new Date(),
-        rtt: connection?.rtt,
-        type: connection?.effectiveType,
-        downlink: connection?.downlink,
-        saveData: connection?.saveData,
-      }));
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    if (connection) {
-      connection.addEventListener('change', updateNetworkInfo);
-    }
-
-    updateNetworkInfo();
+    // Pick up anything that changed between the initial state and this effect.
+    sync();
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      if (connection) {
-        connection.removeEventListener('change', updateNetworkInfo);
-      }
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+      connection?.removeEventListener('change', onChange);
     };
-  }, []);
+  }, [sync]);
 
   return status;
 }

@@ -32,21 +32,6 @@ const countries: ComboboxOption<string>[] = [
   { id: 'br', label: 'Brazil', value: 'BR' },
 ];
 
-/**
- * Combobox types `onChange` as `(value: T | T[] | null) => void` whether or not
- * `multi` is set, so callers have to narrow at the boundary. These two adapters
- * do that in one place. Making the props discriminate on `multi` would remove
- * the need for them — tracked as a typing limitation on the package.
- */
-function single<T>(set: (value: T | null) => void) {
-  return (next: T | T[] | null) => set(Array.isArray(next) ? next[0] ?? null : next);
-}
-
-function multiple<T>(set: (value: T[]) => void) {
-  return (next: T | T[] | null) =>
-    set(Array.isArray(next) ? next : next === null ? [] : [next]);
-}
-
 // Demo 1: Basic Combobox
 function BasicExample() {
   const [value, setValue] = useState<string | null>(null);
@@ -57,7 +42,7 @@ function BasicExample() {
       <Combobox
         options={fruits}
         value={value}
-        onChange={single(setValue)}
+        onChange={setValue}
         placeholder="Select a fruit..."
         clearable
       />
@@ -76,7 +61,7 @@ function MultiSelectExample() {
       <Combobox
         options={countries}
         value={values}
-        onChange={multiple(setValues)}
+        onChange={setValues}
         multi
         placeholder="Select countries..."
         clearable
@@ -111,7 +96,7 @@ function CreatableExample() {
       <Combobox
         options={options}
         value={value}
-        onChange={single(handleChange)}
+        onChange={handleChange}
         creatable
         createLabel={(input) => `Create "${input}"`}
         placeholder="Select or create..."
@@ -139,7 +124,7 @@ function AsyncExample() {
       <Combobox
         loadOptions={loadOptions}
         value={value}
-        onChange={single(setValue)}
+        onChange={setValue}
         placeholder="Search fruits..."
         debounceMs={300}
       />
@@ -168,7 +153,7 @@ function HookExample() {
   } = useCombobox({
     options: fruits,
     value,
-    onChange: single(setValue),
+    onChange: setValue,
   });
 
   return (
@@ -266,7 +251,7 @@ function DisabledOptionsExample() {
       <Combobox
         options={optionsWithDisabled}
         value={value}
-        onChange={single(setValue)}
+        onChange={setValue}
         placeholder="Select an option..."
       />
       <p style={{ marginTop: '10px' }}>Selected: {value || 'None'}</p>

@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect, RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 
 type FullscreenElement = Element & {
   webkitRequestFullscreen?: () => Promise<void> | void;
@@ -12,97 +13,133 @@ type FullscreenDocument = Document & {
   msFullscreenElement?: Element | null;
 };
 
-function getFullscreenElement(doc: FullscreenDocument): Element | null {
+export interface UseFullscreenReturn {
+  /** Whether anything is currently fullscreen. */
+  isFullscreen: boolean;
+  /** Why the last request failed, or null. */
+  error: Error | null;
+  /** Request fullscreen for the target element. Never rejects. */
+  enter: () => Promise<boolean>;
+  /** Leave fullscreen, if in it. Never rejects. */
+  exit: () => Promise<boolean>;
+  /** Enter if not fullscreen, otherwise exit. */
+  toggle: () => Promise<boolean>;
+}
+
+function currentFullscreenElement(): Element | null {
+  if (typeof document === 'undefined') return null;
+  const doc = document as FullscreenDocument;
   return doc.fullscreenElement ?? doc.webkitFullscreenElement ?? doc.msFullscreenElement ?? null;
 }
 
-interface UseFullscreenReturn {
-  isFullscreen: boolean;
-  enter: () => Promise<void>;
-  exit: () => Promise<void>;
-  toggle: () => Promise<void>;
+function requestOn(element: Element): (() => Promise<void> | void) | undefined {
+  const el = element as FullscreenElement;
+  const fn = el.requestFullscreen ?? el.webkitRequestFullscreen ?? el.msRequestFullscreen;
+  return typeof fn === 'function' ? fn.bind(el) : undefined;
 }
 
+function exitOnDocument(): (() => Promise<void> | void) | undefined {
+  if (typeof document === 'undefined') return undefined;
+  const doc = document as FullscreenDocument;
+  const fn = doc.exitFullscreen ?? doc.webkitExitFullscreen ?? doc.msExitFullscreen;
+  return typeof fn === 'function' ? fn.bind(doc) : undefined;
+}
+
+/** Vendor-prefixed variants are still the only way in on some Safari versions. */
+const CHANGE_EVENTS = ['fullscreenchange', 'webkitfullscreenchange', 'msfullscreenchange'];
+
 /**
- * Manage fullscreen mode for an element
- * @param ref Ref to the element to make fullscreen
- * @returns Fullscreen state and controls
- * 
- * @example
- * const ref = useRef<HTMLDivElement>(null);
- * const { isFullscreen, toggle } = useFullscreen(ref);
- * 
- * <div ref={ref}>
- *   <button onClick={toggle}>
- *     {isFullscreen ? 'Exit' : 'Enter'} Fullscreen
- *   </button>
- * </div>
+ * Drive the Fullscreen API for an element, or for the whole page.
+ *
+ * @param ref element to make fullscreen. Defaults to `document.documentElement`.
+ * @returns `{ isFullscreen, error, enter, exit, toggle }`
+ *
+ * @example Whole page
+ * const { isFullscreen, toggle } = useFullscreen();
+ * return <button onClick={toggle}>{isFullscreen ? 'Exit' : 'Go'} fullscreen</button>;
+ *
+ * @example A specific element
+ * const ref = useRef<HTMLVideoElement>(null);
+ * const { toggle } = useFullscreen(ref);
+ *
+ * @remarks
+ * `enter`, `exit` and `toggle` resolve to a boolean instead of rejecting. Browsers
+ * refuse fullscreen outside a user gesture, which is expected rather than
+ * exceptional, so the reason lands in `error` and the caller needs no try/catch.
  */
-export function useFullscreen(
-  ref: RefObject<Element | null>
+export function useFullscreen<T extends Element = Element>(
+  ref?: RefObject<T | null>,
 ): UseFullscreenReturn {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const enter = useCallback(async () => {
-    const element = ref.current;
-    if (!element) return;
+  const refHolder = useRef(ref);
+  refHolder.current = ref;
 
-    const fullscreenElement = element as FullscreenElement;
+  const target = useCallback((): Element | null => {
+    const fromRef = refHolder.current?.current;
+    if (fromRef) return fromRef;
+    return typeof document === 'undefined' ? null : document.documentElement;
+  }, []);
 
-    try {
-      if (fullscreenElement.requestFullscreen) {
-        await fullscreenElement.requestFullscreen();
-      } else if (fullscreenElement.webkitRequestFullscreen) {
-        await fullscreenElement.webkitRequestFullscreen();
-      } else if (fullscreenElement.msRequestFullscreen) {
-        await fullscreenElement.msRequestFullscreen();
-      }
-    } catch {
+  const enter = useCallback(async (): Promise<boolean> => {
+    setError(null);
+
+    const element = target();
+    const request = element ? requestOn(element) : undefined;
+    if (!request) {
+      setError(new Error('Fullscreen API not supported'));
+      return false;
     }
-  }, [ref]);
-
-  const exit = useCallback(async () => {
-    const fullscreenDocument = document as FullscreenDocument;
 
     try {
-      if (fullscreenDocument.exitFullscreen) {
-        await fullscreenDocument.exitFullscreen();
-      } else if (fullscreenDocument.webkitExitFullscreen) {
-        await fullscreenDocument.webkitExitFullscreen();
-      } else if (fullscreenDocument.msExitFullscreen) {
-        await fullscreenDocument.msExitFullscreen();
-      }
-    } catch {
+      await request();
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause : new Error(String(cause)));
+      return false;
+    }
+  }, [target]);
+
+  const exit = useCallback(async (): Promise<boolean> => {
+    setError(null);
+
+    // Calling exitFullscreen when nothing is fullscreen rejects in some browsers.
+    if (!currentFullscreenElement()) return false;
+
+    const request = exitOnDocument();
+    if (!request) {
+      setError(new Error('Fullscreen API not supported'));
+      return false;
+    }
+
+    try {
+      await request();
+      return true;
+    } catch (cause) {
+      setError(cause instanceof Error ? cause : new Error(String(cause)));
+      return false;
     }
   }, []);
 
-  const toggle = useCallback(async () => {
-    if (getFullscreenElement(document as FullscreenDocument)) {
-      await exit();
-    } else {
-      await enter();
-    }
-  }, [enter, exit]);
+  const toggle = useCallback(
+    (): Promise<boolean> => (currentFullscreenElement() ? exit() : enter()),
+    [enter, exit],
+  );
 
   useEffect(() => {
-    const fullscreenDocument = document as FullscreenDocument;
+    if (typeof document === 'undefined') return;
 
-    const handleChange = () => {
-      setIsFullscreen(getFullscreenElement(fullscreenDocument) !== null);
-    };
+    const onChange = () => setIsFullscreen(currentFullscreenElement() !== null);
 
-    document.addEventListener('fullscreenchange', handleChange);
-    document.addEventListener('webkitfullscreenchange', handleChange);
-    document.addEventListener('msfullscreenchange', handleChange);
-
-    handleChange();
+    CHANGE_EVENTS.forEach((name) => document.addEventListener(name, onChange));
+    // The document may already be fullscreen when this mounts.
+    onChange();
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleChange);
-      document.removeEventListener('webkitfullscreenchange', handleChange);
-      document.removeEventListener('msfullscreenchange', handleChange);
+      CHANGE_EVENTS.forEach((name) => document.removeEventListener(name, onChange));
     };
   }, []);
 
-  return { isFullscreen, enter, exit, toggle };
+  return { isFullscreen, error, enter, exit, toggle };
 }

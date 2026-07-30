@@ -1,101 +1,96 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-interface UseCountdownReturn {
-  seconds: number;
+export interface UseCountdownReturn {
+  /** Seconds remaining. */
+  timeLeft: number;
+  /** Whether the countdown is currently ticking. */
   isRunning: boolean;
-  isPaused: boolean;
+  /** Start, or resume after a pause. Does nothing at zero. */
   start: () => void;
+  /** Stop ticking, keeping the remaining time. */
   pause: () => void;
-  resume: () => void;
-  reset: (newSeconds?: number) => void;
-  stop: () => void;
+  /** Stop and return to the initial time. */
+  reset: () => void;
+  /** Stop and set a new time. */
+  resetWith: (seconds: number) => void;
+}
+
+/** Whole, non-negative seconds — the only thing a countdown can meaningfully hold. */
+function normalize(seconds: number): number {
+  if (!Number.isFinite(seconds)) return 0;
+  return Math.max(0, Math.floor(seconds));
 }
 
 /**
- * Countdown timer hook
- * @param initialSeconds Starting seconds
- * @returns Countdown state and controls
- * 
+ * A one-second-resolution countdown.
+ *
+ * @param initialSeconds where the countdown starts, clamped to >= 0. Defaults to 60.
+ * @returns `{ timeLeft, isRunning, start, pause, reset, resetWith }`
+ *
  * @example
- * const { seconds, start, pause, reset, isRunning } = useCountdown(60);
- * 
- * // Start countdown
- * start();
- * 
- * // seconds decreases every second until 0
+ * const { timeLeft, isRunning, start, pause, reset } = useCountdown(30);
+ *
+ * return (
+ *   <>
+ *     <span>{timeLeft}s</span>
+ *     <button onClick={isRunning ? pause : start}>{isRunning ? 'Pause' : 'Start'}</button>
+ *     <button onClick={reset}>Reset</button>
+ *   </>
+ * );
+ *
+ * @remarks
+ * `reset` takes no argument, so it can be passed straight to an event handler
+ * without the event being mistaken for a duration. Use `resetWith(seconds)` to
+ * change the time.
  */
-export function useCountdown(initialSeconds: number): UseCountdownReturn {
-  const [seconds, setSeconds] = useState(initialSeconds);
+export function useCountdown(initialSeconds = 60): UseCountdownReturn {
+  const initial = normalize(initialSeconds);
+
+  const [timeLeft, setTimeLeft] = useState(initial);
   const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const clearTimer = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  }, []);
+  // Lets `start` decide whether there is anything left to count without taking
+  // timeLeft as a dependency, which would rebuild the callback on every tick.
+  const timeLeftRef = useRef(timeLeft);
+  timeLeftRef.current = timeLeft;
 
-  const start = useCallback(() => {
-    if (seconds <= 0) {
-      setSeconds(initialSeconds);
-    }
-    setIsRunning(true);
-    setIsPaused(false);
-  }, [seconds, initialSeconds]);
-
-  const pause = useCallback(() => {
-    setIsPaused(true);
-    setIsRunning(false);
-    clearTimer();
-  }, [clearTimer]);
-
-  const resume = useCallback(() => {
-    if (seconds > 0) {
-      setIsRunning(true);
-      setIsPaused(false);
-    }
-  }, [seconds]);
-
-  const reset = useCallback((newSeconds?: number) => {
-    clearTimer();
-    setIsRunning(false);
-    setIsPaused(false);
-    setSeconds(newSeconds ?? initialSeconds);
-  }, [clearTimer, initialSeconds]);
-
-  const stop = useCallback(() => {
-    clearTimer();
-    setIsRunning(false);
-    setIsPaused(false);
-  }, [clearTimer]);
+  const initialRef = useRef(initial);
+  initialRef.current = initial;
 
   useEffect(() => {
-    if (isRunning && !isPaused) {
-      intervalRef.current = setInterval(() => {
-        setSeconds((prev) => {
-          if (prev <= 1) {
-            clearTimer();
-            setIsRunning(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!isRunning) return;
 
-    return clearTimer;
-  }, [isRunning, isPaused, clearTimer]);
+    const id = setInterval(() => {
+      setTimeLeft((prev) => Math.max(0, prev - 1));
+    }, 1000);
 
-  return {
-    seconds,
-    isRunning,
-    isPaused,
-    start,
-    pause,
-    resume,
-    reset,
-    stop,
-  };
+    return () => clearInterval(id);
+  }, [isRunning]);
+
+  // Stopping is driven off the value rather than done inside the tick, so the
+  // state updater stays pure and is safe to invoke twice under StrictMode.
+  useEffect(() => {
+    if (isRunning && timeLeft === 0) setIsRunning(false);
+  }, [isRunning, timeLeft]);
+
+  const start = useCallback(() => {
+    if (timeLeftRef.current <= 0) return;
+    setIsRunning(true);
+  }, []);
+
+  const pause = useCallback(() => {
+    setIsRunning(false);
+  }, []);
+
+  const reset = useCallback(() => {
+    setIsRunning(false);
+    setTimeLeft(initialRef.current);
+  }, []);
+
+  const resetWith = useCallback((seconds: number) => {
+    setIsRunning(false);
+    setTimeLeft(normalize(seconds));
+  }, []);
+
+  return { timeLeft, isRunning, start, pause, reset, resetWith };
 }

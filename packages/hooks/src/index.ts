@@ -13,5 +13,5 @@ export { useClipboard } from './useClipboard';
 export { useFullscreen } from './useFullscreen';
 export { useResizeObserver } from './useResizeObserver';
 export { useClickOutside } from './useClickOutside';
-export { useKeyPress, useKeyPressMultiple } from './useKeyPress';
+export { useKeyPress, useKeyPressState, useKeyPressMultiple } from './useKeyPress';
 export { useScrollPosition } from './useScrollPosition';

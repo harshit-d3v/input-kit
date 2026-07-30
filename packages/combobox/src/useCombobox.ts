@@ -31,6 +31,14 @@ export function useCombobox<T>(props: UseComboboxProps<T>): UseComboboxReturn<T>
     id: idProp,
   } = props;
 
+  /**
+   * The public `onChange` is discriminated on `multi`, so on the union it accepts
+   * only the intersection of both parameter types — which nothing satisfies. The
+   * variance is resolved once, here, rather than at each call below. `multi` decides
+   * which shape is emitted, and it is the same flag the caller's type was chosen by.
+   */
+  const emit = onChange as (value: T | T[] | null) => void;
+
   // Generate unique ID for accessibility
   const id = useMemo(() => idProp || generateId('combobox'), [idProp]);
   const listboxId = `${id}-listbox`;
@@ -159,16 +167,16 @@ export function useCombobox<T>(props: UseComboboxProps<T>): UseComboboxReturn<T>
       const isSelected = isOptionSelected(option, value);
       
       if (isSelected) {
-        onChange(removeValueFromArray(currentValue, optionValue));
+        emit(removeValueFromArray(currentValue, optionValue));
       } else {
-        onChange([...currentValue, optionValue]);
+        emit([...currentValue, optionValue]);
       }
       
       // Keep input focused and dropdown open for multi-select
       inputRef.current?.focus();
     } else {
       // Single-select mode
-      onChange(optionValue);
+      emit(optionValue);
       
       if (clearInputOnSelect) {
         setInputValue('');
@@ -187,7 +195,7 @@ export function useCombobox<T>(props: UseComboboxProps<T>): UseComboboxReturn<T>
   }, [filteredOptions.length]);
 
   const clearSelection = useCallback(() => {
-    onChange(multi ? [] : null);
+    emit(multi ? [] : null);
     setInputValue('');
     inputRef.current?.focus();
   }, [onChange, multi]);
@@ -275,7 +283,7 @@ export function useCombobox<T>(props: UseComboboxProps<T>): UseComboboxReturn<T>
         if (multi && !inputValue && Array.isArray(value) && value.length > 0) {
           // Remove last selected item when input is empty
           const newValue = value.slice(0, -1);
-          onChange(newValue);
+          emit(newValue);
         }
         break;
     }

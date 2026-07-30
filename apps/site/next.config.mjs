@@ -17,14 +17,10 @@ const nextConfig = {
   outputFileTracingRoot: join(here, '../../'),
 
   typescript: {
-    // The site compiles 41 packages' demo files, and 27 type errors remain in
-    // five of them (dropzone, form, table, hooks, virtual) — every one listed in
-    // KNOWN-ISSUES.md. They are type-only: the demos render correctly, all 41
-    // package sources typecheck clean via `npm run typecheck`, and all 41 build
-    // clean via `npm run build`. Blocking the docs deploy on demo-file typing
-    // would hide 36 working demos to punish 5. Revisit once KNOWN-ISSUES is
-    // cleared, then set this back to false.
-    ignoreBuildErrors: true,
+    // Strict on purpose. This build compiles all 41 packages' demo files as well as
+    // the site, so a type error anywhere in the workspace fails the deploy rather
+    // than shipping a demo that does not match its package's API.
+    ignoreBuildErrors: false,
   },
 
   webpack: (config) => {

@@ -125,6 +125,8 @@ export function Demo() {
             columnCount={3}
             cellWidth={220}
             cellHeight={150}
+            // 3 columns of 220 with 16 between them — sized to show all three.
+            width={3 * 220 + 2 * 16}
             height={360}
             gap={16}
             renderItem={(item) => (

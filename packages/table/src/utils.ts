@@ -1,6 +1,17 @@
 import type { SortState, FilterState, Column, TableRow } from './types';
 
 /**
+ * Read a column's field off a row by string key.
+ *
+ * Columns are addressed by `key`, which is a string, but rows are the caller's own
+ * types and rightly have no index signature. The cast is confined here so it is not
+ * scattered through the table internals — see the note on {@link TableRow}.
+ */
+function readField(row: unknown, key: string): unknown {
+  return (row as Record<string, unknown>)[key];
+}
+
+/**
  * Sort data based on sort state
  */
 export function sortData<T extends TableRow>(
@@ -23,8 +34,8 @@ export function sortData<T extends TableRow>(
       valueA = column.accessor(a);
       valueB = column.accessor(b);
     } else {
-      valueA = a[sortBy.key!];
-      valueB = b[sortBy.key!];
+      valueA = readField(a, sortBy.key!);
+      valueB = readField(b, sortBy.key!);
     }
 
     // Handle null/undefined
@@ -78,7 +89,7 @@ export function filterData<T extends TableRow>(
       if (column.accessor) {
         value = column.accessor(row);
       } else {
-        value = row[key];
+        value = readField(row, key);
       }
 
       if (value == null) return false;
@@ -188,5 +199,5 @@ export function getCellValue<T extends TableRow>(
   if (column.accessor) {
     return column.accessor(row);
   }
-  return row[column.key];
+  return readField(row, column.key);
 }

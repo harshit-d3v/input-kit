@@ -26,7 +26,14 @@ describe('useIntersectionObserver', () => {
       }
     }
 
-    window.IntersectionObserver = MockIntersectionObserver as unknown as typeof IntersectionObserver;
+    // Wrapped in a spy so the "passes options to observer" case can assert on the
+    // constructor arguments — `toHaveBeenCalledWith` needs a mock, and a bare class
+    // is not one. Returning an object from the implementation means `new` yields it.
+    window.IntersectionObserver = vi
+      .fn()
+      .mockImplementation(
+        (callback: IntersectionObserverCallback) => new MockIntersectionObserver(callback),
+      ) as unknown as typeof IntersectionObserver;
   });
 
   it('should return initial state', () => {
