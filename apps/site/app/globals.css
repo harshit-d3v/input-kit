@@ -583,9 +583,30 @@ a {
   display: block;
 }
 
+/* The demo surface is always light, whatever the site theme is doing.
+ *
+ * Every package hardcodes a light palette in its inline styles — `background:
+ * 'white'`, `color: '#111827'`, `borderColor: '#d1d5db'` — so rendering a demo
+ * straight onto the dark page left dark text on dark ground and native inputs as
+ * glaring white boxes. `color-scheme: light` matters as much as the background: it
+ * is what makes the browser's own controls (checkbox, select, scrollbar, caret)
+ * render in their light form instead of inverting to match the page. */
 .specimen-body {
   padding: 1.25rem;
   overflow-x: auto;
+  background: #ffffff;
+  color: #111827;
+  color-scheme: light;
+}
+
+/* Demos otherwise inherit the site's heading and link colours, which are tuned for
+ * the dark theme and vanish against white. */
+.specimen-body :is(h1, h2, h3, h4, h5, h6) {
+  color: #111827;
+}
+
+.specimen-body a {
+  color: #4f46e5;
 }
 
 .demo-loading {

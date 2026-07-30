@@ -83,7 +83,10 @@ export default async function PackagePage({ params }: { params: Promise<{ slug: 
         <div className="specimen-bar">
           <b aria-hidden="true" />
           <span>
-            packages/{pkg.slug}/test-demo/demo.tsx — running against src, unstyled by the package
+            {/* "unstyled by the package" used to be asserted here for every package,
+                which is not true of most of them — json carries 30 inline style
+                blocks, gauge 18, date 15. The honest claim is just what is running. */}
+            packages/{pkg.slug}/test-demo/demo.tsx — running against src
           </span>
         </div>
         <div className="specimen-body">
