@@ -129,6 +129,10 @@ export interface UseTreeOptions<T = unknown> {
   onNodeClick?: (node: TreeNode<T>) => void;
   /** Cascade check state to children */
   cascadeCheck?: boolean;
+  /** Controlled expanded node IDs. When set, internal expansion state is not used. */
+  expandedIds?: string[];
+  /** Controlled selected node IDs. When set, internal selection state is not used. */
+  selectedIds?: string[];
 }
 
 export interface UseTreeReturn<T = unknown> {
@@ -428,6 +432,8 @@ export function useTree<T = unknown>(options: UseTreeOptions<T>): UseTreeReturn<
     onCheckedChange,
     onNodeClick,
     cascadeCheck = true,
+    expandedIds: controlledExpandedIds,
+    selectedIds: controlledSelectedIds,
   } = options;
 
   const flatNodes = useMemo(() => flattenTree(nodes), [nodes]);
@@ -436,11 +442,28 @@ export function useTree<T = unknown>(options: UseTreeOptions<T>): UseTreeReturn<
     [nodes]
   );
 
-  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+  const [internalExpandedIds, setInternalExpandedIds] = useState<Set<string>>(
     () => new Set(defaultExpandedIds)
   );
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+  const [internalSelectedIds, setInternalSelectedIds] = useState<Set<string>>(
     () => new Set(defaultSelectedIds)
+  );
+
+  // Controlled expansion/selection is resolved here rather than in `Tree`. It used to
+  // be layered on top afterwards, which meant the mutators still derived their next
+  // state — and therefore the argument handed to onExpansionChange — from the
+  // internal set the parent never updated. `expandedIds={['a']}` plus a click on `b`
+  // reported `['b']` instead of `['a','b']`.
+  const isExpansionControlled = controlledExpandedIds !== undefined;
+  const isSelectionControlled = controlledSelectedIds !== undefined;
+
+  const expandedIds = useMemo(
+    () => (controlledExpandedIds ? new Set(controlledExpandedIds) : internalExpandedIds),
+    [controlledExpandedIds, internalExpandedIds]
+  );
+  const selectedIds = useMemo(
+    () => (controlledSelectedIds ? new Set(controlledSelectedIds) : internalSelectedIds),
+    [controlledSelectedIds, internalSelectedIds]
   );
   const [checkedIds, setCheckedIds] = useState<Set<string>>(
     () => new Set(defaultCheckedIds)
@@ -449,166 +472,164 @@ export function useTree<T = unknown>(options: UseTreeOptions<T>): UseTreeReturn<
     () => defaultSelectedIds[0] ?? nodes[0]?.id ?? null
   );
 
+  // Every mutator below computes its next state from a ref rather than from a
+  // `setState` updater, then notifies. Notifying *inside* an updater — which is what
+  // this hook used to do throughout — breaks the purity React requires: StrictMode
+  // invokes updaters twice, so each consumer callback fired twice per interaction,
+  // and React may re-run them again when rebasing concurrent updates.
+  const expandedRef = useRef(expandedIds);
+  expandedRef.current = expandedIds;
+  const selectedRef = useRef(selectedIds);
+  selectedRef.current = selectedIds;
+  const checkedRef = useRef(checkedIds);
+  checkedRef.current = checkedIds;
+
+  const commitExpanded = useCallback((next: Set<string>) => {
+    expandedRef.current = next;
+    if (!isExpansionControlled) setInternalExpandedIds(next);
+    onExpansionChange?.(Array.from(next));
+  }, [isExpansionControlled, onExpansionChange]);
+
+  const commitSelected = useCallback((next: Set<string>) => {
+    selectedRef.current = next;
+    if (!isSelectionControlled) setInternalSelectedIds(next);
+    onSelectionChange?.(Array.from(next));
+  }, [isSelectionControlled, onSelectionChange]);
+
+  const commitChecked = useCallback((next: Set<string>) => {
+    checkedRef.current = next;
+    setCheckedIds(next);
+    onCheckedChange?.(Array.from(next));
+  }, [onCheckedChange]);
+
   // Expansion
   const toggleExpand = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      onExpansionChange?.(Array.from(next));
-      return next;
-    });
-  }, [onExpansionChange]);
+    const next = new Set(expandedRef.current);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    commitExpanded(next);
+  }, [commitExpanded]);
 
   const expand = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      if (prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.add(id);
-      onExpansionChange?.(Array.from(next));
-      return next;
-    });
-  }, [onExpansionChange]);
+    if (expandedRef.current.has(id)) return;
+    const next = new Set(expandedRef.current);
+    next.add(id);
+    commitExpanded(next);
+  }, [commitExpanded]);
 
   const collapse = useCallback((id: string) => {
-    setExpandedIds((prev) => {
-      if (!prev.has(id)) return prev;
-      const next = new Set(prev);
-      next.delete(id);
-      onExpansionChange?.(Array.from(next));
-      return next;
-    });
-  }, [onExpansionChange]);
+    if (!expandedRef.current.has(id)) return;
+    const next = new Set(expandedRef.current);
+    next.delete(id);
+    commitExpanded(next);
+  }, [commitExpanded]);
 
   const expandAll = useCallback(() => {
     const allIds = Array.from(flatNodes.keys()).filter(
       (id) => flatNodes.get(id)?.hasChildren
     );
-    setExpandedIds(new Set(allIds));
-    onExpansionChange?.(allIds);
-  }, [flatNodes, onExpansionChange]);
+    commitExpanded(new Set(allIds));
+  }, [flatNodes, commitExpanded]);
 
   const collapseAll = useCallback(() => {
-    setExpandedIds(new Set());
-    onExpansionChange?.([]);
-  }, [onExpansionChange]);
+    commitExpanded(new Set());
+  }, [commitExpanded]);
 
   // Selection
   const toggleSelect = useCallback((id: string) => {
     const node = flatNodes.get(id);
     if (node?.disabled || node?.selectable === false) return;
 
-    setSelectedIds((prev) => {
-      const next = new Set(selectionMode === 'single' ? [] : prev);
-      if (prev.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      onSelectionChange?.(Array.from(next));
-      return next;
-    });
+    const prev = selectedRef.current;
+    const next = new Set(selectionMode === 'single' ? [] : prev);
+    if (prev.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    commitSelected(next);
 
     if (onNodeClick) {
       const originalNode = findNodeById(nodes, id);
       if (originalNode) onNodeClick(originalNode);
     }
-  }, [flatNodes, selectionMode, onSelectionChange, onNodeClick, nodes]);
+  }, [flatNodes, selectionMode, commitSelected, onNodeClick, nodes]);
 
   const select = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(selectionMode === 'single' ? [id] : [...prev, id]);
-      onSelectionChange?.(Array.from(next));
-      return next;
-    });
-  }, [selectionMode, onSelectionChange]);
+    const next = new Set(
+      selectionMode === 'single' ? [id] : [...selectedRef.current, id]
+    );
+    commitSelected(next);
+  }, [selectionMode, commitSelected]);
 
   const deselect = useCallback((id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      onSelectionChange?.(Array.from(next));
-      return next;
-    });
-  }, [onSelectionChange]);
+    const next = new Set(selectedRef.current);
+    next.delete(id);
+    commitSelected(next);
+  }, [commitSelected]);
 
   const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-    onSelectionChange?.([]);
-  }, [onSelectionChange]);
+    commitSelected(new Set());
+  }, [commitSelected]);
 
-  // Checkbox
-  const toggleCheck = useCallback((id: string) => {
-    const node = flatNodes.get(id);
-    if (node?.disabled) return;
+  // Checkbox.
+  //
+  // `setChecked` is shared by toggle/check/uncheck so all three reconcile ancestors
+  // the same way. They previously disagreed: only `toggleCheck` walked back up, so
+  // calling `check` on every child left the parent unchecked while the equivalent
+  // clicks marked it checked.
+  const setChecked = useCallback((id: string, shouldCheck: boolean) => {
+    const next = new Set(checkedRef.current);
 
-    setCheckedIds((prev) => {
-      const next = new Set(prev);
-      const wasChecked = prev.has(id);
-
-      if (wasChecked) {
-        next.delete(id);
-        if (cascadeCheck) {
-          getDescendantIds(id, flatNodes).forEach((d) => next.delete(d));
-        }
-      } else {
-        next.add(id);
-        if (cascadeCheck) {
-          getDescendantIds(id, flatNodes).forEach((d) => next.add(d));
-        }
-      }
-
-      // Update parent states
-      if (cascadeCheck) {
-        getAncestorIds(id, flatNodes).forEach((ancestorId) => {
-          const ancestor = flatNodes.get(ancestorId);
-          if (!ancestor) return;
-          
-          const allChildrenChecked = ancestor.childIds.every((c) => next.has(c));
-          if (allChildrenChecked) {
-            next.add(ancestorId);
-          } else {
-            next.delete(ancestorId);
-          }
-        });
-      }
-
-      onCheckedChange?.(Array.from(next));
-      return next;
-    });
-  }, [flatNodes, cascadeCheck, onCheckedChange]);
-
-  const check = useCallback((id: string) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev);
+    if (shouldCheck) {
       next.add(id);
       if (cascadeCheck) {
         getDescendantIds(id, flatNodes).forEach((d) => next.add(d));
       }
-      onCheckedChange?.(Array.from(next));
-      return next;
-    });
-  }, [flatNodes, cascadeCheck, onCheckedChange]);
-
-  const uncheck = useCallback((id: string) => {
-    setCheckedIds((prev) => {
-      const next = new Set(prev);
+    } else {
       next.delete(id);
       if (cascadeCheck) {
         getDescendantIds(id, flatNodes).forEach((d) => next.delete(d));
       }
-      onCheckedChange?.(Array.from(next));
-      return next;
-    });
-  }, [flatNodes, cascadeCheck, onCheckedChange]);
+    }
+
+    if (cascadeCheck) {
+      getAncestorIds(id, flatNodes).forEach((ancestorId) => {
+        const ancestor = flatNodes.get(ancestorId);
+        if (!ancestor) return;
+
+        const allChildrenChecked = ancestor.childIds.every((c) => next.has(c));
+        if (allChildrenChecked) {
+          next.add(ancestorId);
+        } else {
+          next.delete(ancestorId);
+        }
+      });
+    }
+
+    commitChecked(next);
+  }, [flatNodes, cascadeCheck, commitChecked]);
+
+  const toggleCheck = useCallback((id: string) => {
+    const node = flatNodes.get(id);
+    if (node?.disabled) return;
+    setChecked(id, !checkedRef.current.has(id));
+  }, [flatNodes, setChecked]);
+
+  const check = useCallback((id: string) => {
+    setChecked(id, true);
+  }, [setChecked]);
+
+  const uncheck = useCallback((id: string) => {
+    setChecked(id, false);
+  }, [setChecked]);
 
   const clearChecked = useCallback(() => {
-    setCheckedIds(new Set());
-    onCheckedChange?.([]);
-  }, [onCheckedChange]);
+    commitChecked(new Set());
+  }, [commitChecked]);
 
   // Getters
   const getNode = useCallback(
@@ -976,10 +997,12 @@ export function TreeNodeComponent<T = unknown>({
     alignItems: 'center',
   };
 
+  // Collapsed children are unmounted rather than clipped. The old `max-height: 0`
+  // container left every descendant in the DOM and, worse, in the accessibility
+  // tree — so a node marked `aria-expanded="false"` still exposed its whole subtree
+  // to a screen reader.
   const childrenContainerStyle: React.CSSProperties = {
     overflow: 'hidden',
-    maxHeight: isExpanded ? '9999px' : '0px',
-    transition: context.animate ? 'max-height 0.2s ease' : undefined,
   };
 
   const defaultIcon = hasChildren ? (isExpanded ? <FolderOpenIcon size={16} /> : <FolderIcon size={16} />) : <FileIcon size={16} />;
@@ -1034,7 +1057,7 @@ export function TreeNodeComponent<T = unknown>({
         </span>
       </div>
 
-      {hasChildren && (
+      {hasChildren && isExpanded && (
         <div style={childrenContainerStyle} role="group">
           {node.children!.map((child, index) => (
             <TreeNodeComponent
@@ -1085,34 +1108,35 @@ export function Tree<T = unknown>({
     onExpansionChange,
     onNodeClick,
     cascadeCheck,
+    expandedIds: controlledExpandedIds,
+    selectedIds: controlledSelectedIds,
   });
 
-  // Use controlled state if provided
-  const expandedIds = controlledExpandedIds
-    ? new Set(controlledExpandedIds)
-    : tree.expandedIds;
-  const selectedIds = controlledSelectedIds
-    ? new Set(controlledSelectedIds)
-    : tree.selectedIds;
+  // `useTree` already resolves controlled vs internal state.
+  const { expandedIds, selectedIds, flatNodes, focusedId, setFocusedId } = tree;
+
   const visibleIds = useMemo(
     () => getVisibleNodeIds(nodes, expandedIds),
     [expandedIds, nodes]
   );
 
+  // Depends on the specific fields it reads, not on `tree` — that is the object
+  // literal `useTree` returns fresh every render, so this effect used to run on
+  // every single render of the tree.
   useEffect(() => {
-    const firstFocusableId = visibleIds.find((id) => !tree.flatNodes.get(id)?.disabled) ?? null;
+    const firstFocusableId = visibleIds.find((id) => !flatNodes.get(id)?.disabled) ?? null;
 
     if (!firstFocusableId) {
-      if (tree.focusedId !== null) {
-        tree.setFocusedId(null);
+      if (focusedId !== null) {
+        setFocusedId(null);
       }
       return;
     }
 
-    if (!tree.focusedId || !visibleIds.includes(tree.focusedId) || tree.flatNodes.get(tree.focusedId)?.disabled) {
-      tree.setFocusedId(firstFocusableId);
+    if (!focusedId || !visibleIds.includes(focusedId) || flatNodes.get(focusedId)?.disabled) {
+      setFocusedId(firstFocusableId);
     }
-  }, [tree, visibleIds]);
+  }, [flatNodes, focusedId, setFocusedId, visibleIds]);
 
   const contextValue: TreeContextValue = {
     expandedIds,

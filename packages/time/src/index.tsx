@@ -1,6 +1,6 @@
 // @input-kit/time - Relative time formatting utilities and components
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 
 // ============================================================================
 // Types
@@ -226,11 +226,13 @@ export function getTimeUnit(
     }
   }
 
-  // Return smallest available unit
+  // Nothing was large enough. Fall back to the smallest permitted unit, but never
+  // report zero of it — `minUnit: 'minute'` on a 30-second-old date used to floor to
+  // "0 minutes ago".
   const smallestUnit = availableUnits[availableUnits.length - 1] || TIME_UNITS[TIME_UNITS.length - 1];
   return {
     unit: smallestUnit.unit,
-    value: Math.floor(absSeconds / smallestUnit.seconds),
+    value: Math.max(1, Math.floor(absSeconds / smallestUnit.seconds)),
     config: smallestUnit,
   };
 }
@@ -265,8 +267,22 @@ export function formatRelativeTime(
     return style === 'narrow' ? 'now' : 'just now';
   }
 
-  const { unit, value, config } = getTimeUnit(absDiff, { maxUnit, minUnit });
-  const displayValue = round ? Math.round(absDiff / config.seconds) : value;
+  let { unit, value, config } = getTimeUnit(absDiff, { maxUnit, minUnit });
+  let displayValue = round ? Math.round(absDiff / config.seconds) : value;
+
+  // Rounding can overflow the unit that flooring picked: 3,599 seconds selects
+  // `minute` and rounds to 60, which used to print "60 minutes ago" instead of
+  // promoting to "1 hour ago". Re-derive the unit from the rounded total.
+  if (round) {
+    const roundedSeconds = displayValue * config.seconds;
+    const promoted = getTimeUnit(roundedSeconds, { maxUnit, minUnit });
+
+    if (promoted.config.seconds > config.seconds) {
+      unit = promoted.unit;
+      config = promoted.config;
+      displayValue = Math.round(roundedSeconds / config.seconds);
+    }
+  }
 
   if (addSuffix) {
     const formatter = getRelativeTimeFormatter(locale, style);
@@ -336,13 +352,22 @@ export function formatDuration(
     }
   }
 
-  if (style === 'narrow') {
+  if (style === 'narrow' || parts.length === 1) {
     return parts.join(' ');
   }
-  
-  if (parts.length === 1) return parts[0];
-  if (parts.length === 2) return parts.join(' and ');
-  return parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1];
+
+  // Joining is delegated to Intl.ListFormat so the conjunction matches the locale the
+  // parts were formatted in. Hardcoded ' and ' / ', and ' produced strings like
+  // "2 heures and 30 minutes" for locale 'fr'.
+  try {
+    return new Intl.ListFormat(
+      typeof locale === 'string' ? locale : Array.from(locale),
+      { style: style === 'short' ? 'short' : 'long', type: 'conjunction' }
+    ).format(parts);
+  } catch {
+    if (parts.length === 2) return parts.join(' and ');
+    return parts.slice(0, -1).join(', ') + ', and ' + parts[parts.length - 1];
+  }
 }
 
 /**
@@ -576,19 +601,39 @@ export function useStopwatch(options: { autoStart?: boolean } = {}): {
   const [time, setTime] = useState(0);
   const [isRunning, setIsRunning] = useState(autoStart);
 
+  // Elapsed time is measured against a wall-clock origin rather than accumulated a
+  // tick at a time. Adding a literal 100 per interval drifted steadily behind real
+  // time — badly so in a background tab, where timers are throttled to once a second
+  // or less but each tick still only advanced the readout by 100ms.
+  const startedAtRef = useRef<number | null>(null);
+  const accumulatedRef = useRef(0);
+
   useEffect(() => {
     if (!isRunning) return;
 
+    startedAtRef.current = Date.now();
+
     const timer = setInterval(() => {
-      setTime((t) => t + 100);
+      const startedAt = startedAtRef.current;
+      if (startedAt === null) return;
+      setTime(accumulatedRef.current + (Date.now() - startedAt));
     }, 100);
 
-    return () => clearInterval(timer);
+    return () => {
+      clearInterval(timer);
+      const startedAt = startedAtRef.current;
+      if (startedAt !== null) {
+        accumulatedRef.current += Date.now() - startedAt;
+        startedAtRef.current = null;
+      }
+    };
   }, [isRunning]);
 
   const start = useCallback(() => setIsRunning(true), []);
   const stop = useCallback(() => setIsRunning(false), []);
   const reset = useCallback(() => {
+    accumulatedRef.current = 0;
+    startedAtRef.current = null;
     setTime(0);
     setIsRunning(false);
   }, []);

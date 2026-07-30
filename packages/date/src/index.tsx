@@ -84,14 +84,20 @@ export function formatDate(date: Date, format: string = 'MM/DD/YYYY', locale: st
   
   const monthNames = new Intl.DateTimeFormat(locale, { month: 'long' }).format(date);
   const monthShort = new Intl.DateTimeFormat(locale, { month: 'short' }).format(date);
-  
-  return format
-    .replace('YYYY', year)
-    .replace('YY', shortYear)
-    .replace('MMMM', monthNames)
-    .replace('MMM', monthShort)
-    .replace('MM', month)
-    .replace('DD', day);
+
+  const replacements: Record<string, string> = {
+    YYYY: year,
+    YY: shortYear,
+    MMMM: monthNames,
+    MMM: monthShort,
+    MM: month,
+    DD: day,
+  };
+
+  // Single pass. A chain of `.replace(token, value)` calls substitutes only the first
+  // occurrence of each token, so "MM/DD/YYYY (MM)" left the second MM untouched, and
+  // each step rescanned text that earlier steps had already substituted in.
+  return format.replace(/YYYY|YY|MMMM|MMM|MM|DD/g, (token) => replacements[token]);
 }
 
 export function parseDate(dateString: string, format: string = 'MM/DD/YYYY'): Date | null {
@@ -123,11 +129,29 @@ export function parseDate(dateString: string, format: string = 'MM/DD/YYYY'): Da
       }
     });
     
+    // Reject out-of-range components rather than letting the Date constructor roll
+    // them over. `new Date(2026, 12, 45)` is a valid Date in February 2027, so
+    // parseDate('13/45/2026') used to "succeed" and return a wildly wrong date.
+    if (month < 0 || month > 11) return null;
+    if (day < 1 || day > 31) return null;
+
     const date = new Date(year, month, day);
-    return isNaN(date.getTime()) ? null : date;
+    if (isNaN(date.getTime())) return null;
+
+    // Catches day overflow within a valid month — 31 April, 30 February.
+    if (date.getFullYear() !== year || date.getMonth() !== month || date.getDate() !== day) {
+      return null;
+    }
+
+    return date;
   } catch {
     return null;
   }
+}
+
+/** Midnight on the same calendar day, for date-only comparisons. */
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
 export function isSameDay(date1: Date, date2: Date): boolean {
@@ -207,14 +231,17 @@ export function useDatePicker(options: UseDatePickerOptions = {}): UseDatePicker
   }, [setSelectedDate]);
 
   const isDateDisabled = useCallback((date: Date): boolean => {
-    if (minDate && date < minDate) return true;
-    if (maxDate && date > maxDate) return true;
+    // Compared by calendar day, not by timestamp. Bounds usually carry a time
+    // component — `minDate` of "today, 14:00" used to disable today's cell, because
+    // the cell's own Date is midnight and therefore earlier.
+    if (minDate && startOfDay(date) < startOfDay(minDate)) return true;
+    if (maxDate && startOfDay(date) > startOfDay(maxDate)) return true;
     return disabledDates.some(d => isSameDay(d, date));
   }, [minDate, maxDate, disabledDates]);
 
   const isDateInRange = useCallback((date: Date): boolean => {
-    if (minDate && date < minDate) return false;
-    if (maxDate && date > maxDate) return false;
+    if (minDate && startOfDay(date) < startOfDay(minDate)) return false;
+    if (maxDate && startOfDay(date) > startOfDay(maxDate)) return false;
     return true;
   }, [minDate, maxDate]);
 
@@ -286,8 +313,11 @@ export function Calendar({
   }, [month, weekStartsOn]);
 
   const isDateDisabled = (date: Date): boolean => {
-    if (minDate && date < minDate) return true;
-    if (maxDate && date > maxDate) return true;
+    // Compared by calendar day, not by timestamp. Bounds usually carry a time
+    // component — `minDate` of "today, 14:00" used to disable today's cell, because
+    // the cell's own Date is midnight and therefore earlier.
+    if (minDate && startOfDay(date) < startOfDay(minDate)) return true;
+    if (maxDate && startOfDay(date) > startOfDay(maxDate)) return true;
     return disabledDates.some(d => isSameDay(d, date));
   };
 
@@ -311,6 +341,8 @@ export function Calendar({
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
         <button
+          type="button"
+          aria-label="Previous month"
           onClick={() => handleMonthChange(addMonths(month, -1))}
           style={{
             background: 'none',
@@ -323,8 +355,10 @@ export function Calendar({
         >
           ‹
         </button>
-        <span style={{ fontWeight: 600 }}>{monthYearLabel}</span>
+        <span style={{ fontWeight: 600 }} aria-live="polite">{monthYearLabel}</span>
         <button
+          type="button"
+          aria-label="Next month"
           onClick={() => handleMonthChange(addMonths(month, 1))}
           style={{
             background: 'none',
@@ -371,8 +405,13 @@ export function Calendar({
           return (
             <button
               key={i}
+              type="button"
               onClick={() => !disabled && onChange?.(date)}
               disabled={disabled}
+              // A bare "30" tells a screen-reader user nothing. The full date does.
+              aria-label={new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)}
+              aria-current={isTodayDate ? 'date' : undefined}
+              aria-pressed={isSelected ? true : undefined}
               style={{
                 padding: '8px',
                 border: 'none',
@@ -381,8 +420,11 @@ export function Calendar({
                 color: isSelected ? 'white' : disabled ? '#d1d5db' : '#111827',
                 fontWeight: isTodayDate ? 700 : 400,
                 cursor: disabled ? 'not-allowed' : 'pointer',
-                outline: isTodayDate && !isSelected ? '2px solid #3b82f6' : 'none',
-                outlineOffset: '-2px',
+                // Today's ring is drawn with box-shadow so that `outline` stays free
+                // for the browser's focus indicator. Using outline for the ring meant
+                // every other day set `outline: none` and lost its focus ring
+                // entirely — the grid was unusable by keyboard.
+                boxShadow: isTodayDate && !isSelected ? 'inset 0 0 0 2px #3b82f6' : undefined,
               }}
             >
               {date.getDate()}

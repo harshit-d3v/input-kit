@@ -76,18 +76,27 @@ export function useFullscreen(elementRef?: RefObject<Element | null>): UseFullsc
   const toggle = useCallback(async () => {
     if (typeof document === 'undefined') return;
 
-    if (getFullscreenElement(document as FullscreenDocument)) {
+    // Exit only when *our* element is the one that is fullscreen; otherwise enter.
+    const active = getFullscreenElement(document as FullscreenDocument);
+    const target = elementRef?.current ?? document.documentElement;
+
+    if (active === target) {
       await exit();
     } else {
       await enter();
     }
-  }, [enter, exit]);
+  }, [elementRef, enter, exit]);
 
   useEffect(() => {
     const fullscreenDocument = document as FullscreenDocument;
 
+    // Scoped to *this* hook's element. Reporting "something is fullscreen" meant
+    // `useFullscreen(panelARef)` returned true while panel B was the one filling the
+    // screen — and `toggle` then exited B instead of entering A.
     const handleChange = () => {
-      setIsFullscreen(getFullscreenElement(fullscreenDocument) !== null);
+      const active = getFullscreenElement(fullscreenDocument);
+      const target = elementRef?.current ?? document.documentElement;
+      setIsFullscreen(active === target);
     };
 
     document.addEventListener('fullscreenchange', handleChange);
@@ -103,7 +112,7 @@ export function useFullscreen(elementRef?: RefObject<Element | null>): UseFullsc
       document.removeEventListener('mozfullscreenchange', handleChange);
       document.removeEventListener('MSFullscreenChange', handleChange);
     };
-  }, []);
+  }, [elementRef]);
 
   return { isFullscreen, enter, exit, toggle };
 }

@@ -116,10 +116,21 @@ async function readClipboard(): Promise<PasteData> {
         
         for (const item of clipboardItems) {
           for (const type of item.types) {
+            // Text types are already surfaced through `data.text` / `data.html`.
+            // Wrapping every MIME type in a File meant copying plain text produced
+            // `files: [text/plain, text/html]` and fired `onPasteFiles`.
+            if (type === 'text/plain' || type === 'text/html') continue;
+
             const blob = await item.getType(type);
-            const file = new File([blob], `pasted-${Date.now()}`, { type });
+            // Give the synthesised file an extension, so an `acceptedTypes` entry
+            // written as '.png' — the extension form the filter explicitly supports
+            // — can actually match it.
+            const extension = type.includes('/')
+              ? `.${type.split('/')[1].split('+')[0]}`
+              : '';
+            const file = new File([blob], `pasted-${Date.now()}${extension}`, { type });
             files.push(file);
-            
+
             if (type.startsWith('image/')) {
               images.push(file);
             }
@@ -137,6 +148,21 @@ async function readClipboard(): Promise<PasteData> {
   }
   
   return data;
+}
+
+/**
+ * Whether the paste landed in something the user is actually typing into.
+ *
+ * `usePaste` binds to `document` and `preventDefault` defaults to true, so merely
+ * mounting the hook used to stop paste working in every input, textarea and
+ * contenteditable on the page. Cancelling is still the default for everything else —
+ * that is the point of the hook — but never for a real editing surface.
+ */
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (target === null || typeof HTMLElement === 'undefined') return false;
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
 }
 
 function filterByType(files: File[], acceptedTypes?: string[]): File[] {
@@ -213,7 +239,7 @@ export function usePaste(options: UsePasteOptions = {}): UsePasteReturn {
   const handlePaste = useCallback((e: ClipboardEvent) => {
     if (!enabled) return;
     
-    if (preventDefault) {
+    if (preventDefault && !isEditableTarget(e.target)) {
       e.preventDefault();
     }
     
@@ -296,7 +322,7 @@ export function usePasteZone(
   const handlePaste = useCallback((e: ClipboardEvent) => {
     if (!enabled) return;
     
-    if (preventDefault) {
+    if (preventDefault && !isEditableTarget(e.target)) {
       e.preventDefault();
     }
     

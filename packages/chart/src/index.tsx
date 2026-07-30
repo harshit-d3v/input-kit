@@ -68,15 +68,31 @@ function normalizeData(data: DataPoint[] | ChartSeries[]): ChartSeries[] {
 function getMinMax(series: ChartSeries[]): { minY: number; maxY: number } {
   let minY = Infinity;
   let maxY = -Infinity;
-  
+
   series.forEach(s => {
     s.data.forEach(d => {
       minY = Math.min(minY, d.y);
       maxY = Math.max(maxY, d.y);
     });
   });
-  
-  return { minY: Math.min(0, minY), maxY: maxY * 1.1 };
+
+  // No data at all.
+  if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return { minY: 0, maxY: 1 };
+  }
+
+  // Headroom is added as a fraction of the span, not by multiplying the maximum.
+  // `maxY * 1.1` pushed the axis top *below* the highest value whenever that value
+  // was negative, so those points scaled outside the plot area.
+  const span = maxY - minY;
+
+  // A flat series has zero span, which made every scaled value NaN (0/0).
+  if (span === 0) {
+    const magnitude = Math.abs(maxY) || 1;
+    return { minY: Math.min(0, maxY - magnitude * 0.1), maxY: maxY + magnitude * 0.1 };
+  }
+
+  return { minY: Math.min(0, minY), maxY: maxY + span * 0.1 };
 }
 
 function createLinePath(points: { x: number; y: number }[], curved: boolean): string {
@@ -120,16 +136,26 @@ export function LineChart({
   const series = useMemo(() => normalizeData(data), [data]);
   const { minY, maxY } = useMemo(() => getMinMax(series), [series]);
   
+  // Labels come from whichever series has the most points, and that same length
+  // drives x positioning for every series.
   const xLabels = useMemo(() => {
-    if (series.length === 0 || series[0].data.length === 0) return [];
-    return series[0].data.map(d => String(d.x));
+    if (series.length === 0) return [];
+    const longest = series.reduce(
+      (best, s) => (s.data.length > best.data.length ? s : best),
+      series[0]
+    );
+    return longest.data.map(d => String(d.x));
   }, [series]);
+
+  const xAxisLength = xLabels.length;
   
   const scaleY = (value: number) => {
     return chartHeight - ((value - minY) / (maxY - minY)) * chartHeight;
   };
   
+  // A single point makes `index / (total - 1)` a 0/0 NaN; centre it instead.
   const scaleX = (index: number, total: number) => {
+    if (total <= 1) return chartWidth / 2;
     return (index / (total - 1)) * chartWidth;
   };
 
@@ -184,14 +210,21 @@ export function LineChart({
         
         {/* Lines */}
         {series.map((s, seriesIndex) => {
+          // All series share one x axis, taken from the longest one. Using each
+          // series' own length stretched every series across the full width
+          // independently, so series of differing lengths no longer lined up with
+          // each other or with the axis labels.
           const points = s.data.map((d, i) => ({
-            x: scaleX(i, s.data.length),
+            x: scaleX(i, xAxisLength),
             y: scaleY(d.y),
           }));
-          
+
           const linePath = createLinePath(points, curved);
           const color = s.color || colors[seriesIndex % colors.length];
-          
+
+          // An empty series used to throw here reading `points[points.length - 1].x`.
+          if (points.length === 0) return null;
+
           return (
             <g key={seriesIndex}>
               {fill && (
@@ -208,10 +241,11 @@ export function LineChart({
                 strokeWidth={strokeWidth}
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                pathLength={animated ? 100 : undefined}
                 style={animated ? {
-                  strokeDasharray: 1000,
-                  strokeDashoffset: 1000,
-                  animation: 'dash 1s ease-out forwards',
+                  strokeDasharray: 100,
+                  strokeDashoffset: 100,
+                  animation: 'input-kit-chart-dash 1s ease-out forwards',
                 } : undefined}
               />
               {showDots && points.map((p, i) => (
@@ -232,7 +266,7 @@ export function LineChart({
       
       {animated && (
         <style>{`
-          @keyframes dash {
+          @keyframes input-kit-chart-dash {
             to { stroke-dashoffset: 0; }
           }
         `}</style>

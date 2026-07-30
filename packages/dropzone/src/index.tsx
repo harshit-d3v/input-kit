@@ -124,11 +124,17 @@ function formatFileSize(bytes: number): string {
 
 function isValidFileType(file: File, accept?: string | string[]): boolean {
   if (!accept) return true;
-  
+
   const acceptArray = Array.isArray(accept) ? accept : accept.split(',').map(s => s.trim());
-  
+
   return acceptArray.some(type => {
     if (type.startsWith('.')) {
+      // `name` is absent during drag events, where only the MIME type is exposed.
+      // Reading it unguarded threw a TypeError on dragenter in Chrome — the one
+      // browser that does populate `DataTransferItem.type` — whenever `accept`
+      // used extensions. An extension rule simply cannot be evaluated without a
+      // filename, so treat it as "not yet known" rather than crashing.
+      if (!file.name) return false;
       return file.name.toLowerCase().endsWith(type.toLowerCase());
     }
     if (type.endsWith('/*')) {
@@ -235,7 +241,17 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
     // Add accepted files
     if (accepted.length > 0) {
       const newFilesWithPreview = accepted.map(createFileWithPreview);
-      setFiles(prev => multiple ? [...prev, ...newFilesWithPreview] : newFilesWithPreview);
+      setFiles(prev => {
+        if (multiple) return [...prev, ...newFilesWithPreview];
+        // Single-file mode replaces the list wholesale, so the outgoing file's
+        // object URL has to be revoked here — nothing else will ever see it again.
+        prev.forEach(f => {
+          if (f.preview && !newFilesWithPreview.some(n => n.preview === f.preview)) {
+            URL.revokeObjectURL(f.preview);
+          }
+        });
+        return newFilesWithPreview;
+      });
       onDropAccepted?.(accepted);
     }
 
@@ -263,11 +279,20 @@ export function useDropzone(options: UseDropzoneOptions = {}): UseDropzoneReturn
     // (Firefox, Safari always return ''; Chrome exposes them). When no type info
     // is available we cannot determine validity, so default to the accept state.
     const hasTypeInfo = items.some(item => item.type !== '');
-    if (!hasTypeInfo || !accept) {
+    const acceptArray = accept
+      ? (Array.isArray(accept) ? accept : accept.split(',').map(s => s.trim()))
+      : [];
+    // Extension rules need a filename, which a drag event never carries, so drag
+    // feedback can only be based on the MIME rules.
+    const mimeRules = acceptArray.filter(rule => !rule.startsWith('.'));
+
+    if (!hasTypeInfo || mimeRules.length === 0) {
       setIsDragAccept(true);
       setIsDragReject(false);
     } else {
-      const allValid = items.every(item => isValidFileType({ type: item.type } as File, accept));
+      const allValid = items.every(item =>
+        isValidFileType({ type: item.type, name: '' } as File, mimeRules)
+      );
       setIsDragAccept(allValid);
       setIsDragReject(!allValid);
     }

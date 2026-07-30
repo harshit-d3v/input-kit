@@ -38,8 +38,8 @@ export interface UseResizeObserverOptions {
   debounceMs?: number;
 }
 
-export interface UseResizeObserverReturn {
-  ref: RefObject<HTMLElement>;
+export interface UseResizeObserverReturn<T extends HTMLElement = HTMLElement> {
+  ref: RefObject<T>;
   size: Size;
   entry: ResizeEntry | null;
 }
@@ -86,17 +86,24 @@ function debounce<T extends (...args: any[]) => any>(
 // Main resize observer hook
 export function useResizeObserver<T extends HTMLElement = HTMLElement>(
   options: UseResizeObserverOptions = {}
-): UseResizeObserverReturn {
+): UseResizeObserverReturn<T> {
   const { onResize, box = 'content-box', debounceMs } = options;
-  
+
   const ref = useRef<T>(null);
   const [size, setSize] = useState<Size>({ width: 0, height: 0 });
   const [entry, setEntry] = useState<ResizeEntry | null>(null);
-  
+
+  // `onResize` is normally an inline arrow. Holding it in a ref keeps it out of the
+  // effect's dependencies, which otherwise disconnected and re-observed the element
+  // on every single render.
+  const onResizeRef = useRef(onResize);
+  onResizeRef.current = onResize;
+
   useEffect(() => {
     const element = ref.current;
     if (!element || typeof ResizeObserver === 'undefined') return;
-    
+
+
     const handleResize = (entries: ResizeObserverEntry[]) => {
       const resizeEntry = entries[0];
       if (!resizeEntry) return;
@@ -126,25 +133,25 @@ export function useResizeObserver<T extends HTMLElement = HTMLElement>(
         height: contentRect.height,
       });
       
-      onResize?.(newEntry);
+      onResizeRef.current?.(newEntry);
     };
-    
-    const debouncedHandler = debounceMs 
-      ? debounce(handleResize, debounceMs) 
+
+    const debouncedHandler = debounceMs
+      ? debounce(handleResize, debounceMs)
       : handleResize;
-    
+
     const observer = new ResizeObserver(debouncedHandler);
     observer.observe(element, { box });
-    
+
     return () => {
       observer.disconnect();
       if (debounceMs) {
         (debouncedHandler as DebouncedFunction<typeof handleResize>).cancel();
       }
     };
-  }, [box, debounceMs, onResize]);
-  
-  return { ref: ref as RefObject<HTMLElement>, size, entry };
+  }, [box, debounceMs]);
+
+  return { ref, size, entry };
 }
 
 // Simpler hook just for element size
@@ -311,16 +318,19 @@ export function useElementBounds<T extends HTMLElement = HTMLElement>(): [
     };
     
     updateBounds();
-    
+
     const observer = new ResizeObserver(updateBounds);
     observer.observe(element);
-    
-    // Also update on scroll
+
+    // Scroll *and* resize: a viewport resize can move the element without changing
+    // its own size, which used to leave the reported bounds stale.
     window.addEventListener('scroll', updateBounds, true);
-    
+    window.addEventListener('resize', updateBounds);
+
     return () => {
       observer.disconnect();
       window.removeEventListener('scroll', updateBounds, true);
+      window.removeEventListener('resize', updateBounds);
     };
   }, []);
   
@@ -358,12 +368,15 @@ export const defaultBreakpoints = {
 
 export function getBreakpoint(width: number, breakpoints = defaultBreakpoints): string {
   const sorted = Object.entries(breakpoints).sort(([, a], [, b]) => b - a);
-  
+
+  // An empty map used to fall through to `sorted[-1][0]` and throw.
+  if (sorted.length === 0) return '';
+
   for (const [name, minWidth] of sorted) {
     if (width >= minWidth) {
       return name;
     }
   }
-  
+
   return sorted[sorted.length - 1][0];
 }

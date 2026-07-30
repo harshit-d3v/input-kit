@@ -54,6 +54,13 @@ function polarToCartesian(
   };
 }
 
+/**
+ * Describe an arc travelling from `startAngle` to `endAngle`.
+ *
+ * The path is emitted in that order — start first — so that a stroke-dash
+ * animation over it fills from the gauge's minimum towards its maximum. (It
+ * previously ran end-to-start, which is the same shape but fills backwards.)
+ */
 function describeArc(
   x: number,
   y: number,
@@ -61,13 +68,13 @@ function describeArc(
   startAngle: number,
   endAngle: number
 ): string {
-  const start = polarToCartesian(x, y, radius, endAngle);
-  const end = polarToCartesian(x, y, radius, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+  const start = polarToCartesian(x, y, radius, startAngle);
+  const end = polarToCartesian(x, y, radius, endAngle);
+  const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? '0' : '1';
 
   return [
     'M', start.x, start.y,
-    'A', radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+    'A', radius, radius, 0, largeArcFlag, 1, end.x, end.y,
   ].join(' ');
 }
 
@@ -131,18 +138,28 @@ export function Gauge({
 
   const { clampedValue, percentage } = normalizeGaugeValue(value, min, max);
   const valueAngle = startAngle + percentage * (endAngle - startAngle);
-  
+
   const backgroundArc = describeArc(center, center, radius, startAngle, endAngle);
-  const valueArc = describeArc(center, center, radius, startAngle, valueAngle);
   const color = getColorForValue(percentage * 100, colors);
-  
-  // Needle position
+
+  // The needle is drawn pointing straight up and rotated into place: `transform`
+  // is animatable on SVG elements, whereas the `x2`/`y2` geometry attributes are
+  // not reliably exposed as CSS properties.
   const needleLength = radius - 10;
-  const needlePos = polarToCartesian(center, center, needleLength, valueAngle);
 
   return (
     <div className={className} style={{ display: 'inline-block', ...style }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        role="meter"
+        aria-valuenow={clampedValue}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuetext={valueFormatter(clampedValue)}
+        aria-label={label}
+      >
         {/* Background arc */}
         <path
           d={backgroundArc}
@@ -152,30 +169,37 @@ export function Gauge({
           strokeLinecap="round"
         />
         
-        {/* Value arc */}
+        {/* Value arc — the full sweep, revealed by dash offset so that it can
+            actually transition. `pathLength` normalises the arc to 100 units so
+            the offset is just the remaining percentage. */}
         <path
-          d={valueArc}
+          d={backgroundArc}
           fill="none"
           stroke={color}
           strokeWidth={thickness}
           strokeLinecap="round"
+          pathLength={100}
+          strokeDasharray={100}
+          strokeDashoffset={100 * (1 - percentage)}
           style={animated ? {
             transition: 'stroke-dashoffset 0.5s ease-out, stroke 0.3s ease',
           } : undefined}
         />
-        
+
         {/* Needle */}
         <line
           x1={center}
           y1={center}
-          x2={needlePos.x}
-          y2={needlePos.y}
+          x2={center}
+          y2={center - needleLength}
           stroke="#374151"
           strokeWidth={3}
           strokeLinecap="round"
-          style={animated ? {
-            transition: 'all 0.5s ease-out',
-          } : undefined}
+          style={{
+            transform: `rotate(${valueAngle}deg)`,
+            transformOrigin: `${center}px ${center}px`,
+            transition: animated ? 'transform 0.5s ease-out' : undefined,
+          }}
         />
         
         {/* Center dot */}
@@ -190,7 +214,7 @@ export function Gauge({
         {showValue && (
           <text
             x={center}
-            y={center + 40}
+            y={center + size * 0.2}
             textAnchor="middle"
             fontSize={size * 0.15}
             fontWeight="bold"
@@ -199,12 +223,12 @@ export function Gauge({
             {valueFormatter(clampedValue)}
           </text>
         )}
-        
+
         {/* Label */}
         {label && (
           <text
             x={center}
-            y={center + 60}
+            y={center + size * 0.3}
             textAnchor="middle"
             fontSize={size * 0.08}
             fill="#6b7280"
@@ -296,6 +320,12 @@ export function LinearGauge({
         )}
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
           <div
+            role="meter"
+            aria-valuenow={clampedValue}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            aria-valuetext={valueFormatter(clampedValue)}
+            aria-label={label}
             style={{
               width: height,
               height: width,
@@ -358,6 +388,12 @@ export function LinearGauge({
         )}
       </div>
       <div
+        role="meter"
+        aria-valuenow={clampedValue}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuetext={valueFormatter(clampedValue)}
+        aria-label={label}
         style={{
           width,
           height,
@@ -373,7 +409,7 @@ export function LinearGauge({
             top: 0,
             left: 0,
             bottom: 0,
-            width: `${percentage}%`,
+            width: `${percentageValue}%`,
             background: color,
             borderRadius: height / 2,
             transition: animated ? 'width 0.5s ease-out, background 0.3s ease' : undefined,

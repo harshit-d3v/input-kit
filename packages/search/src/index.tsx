@@ -32,7 +32,17 @@ export function useSearch(options: {
   const onSearchRef = useRef(onSearch);
   onSearchRef.current = onSearch;
 
+  // Skip the first run. The effect used to dispatch a search for the initial value
+  // ~debounceMs after mount, before the user had typed anything — one spurious query
+  // per mount for every consumer.
+  const hasSearchedRef = useRef(false);
+
   useEffect(() => {
+    if (!hasSearchedRef.current) {
+      hasSearchedRef.current = true;
+      return;
+    }
+
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -50,6 +60,10 @@ export function useSearch(options: {
   }, [value, debounceMs]);
 
   const clear = useCallback(() => {
+    // Cancel any pending dispatch rather than letting it land after the clear.
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     setValue('');
     setDebouncedValue('');
   }, []);
@@ -85,7 +99,15 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
 
     onSearchRef.current = onSearch;
 
+    // As in useSearch: do not fire a search for the initial value on mount.
+    const hasSearchedRef = useRef(false);
+
     useEffect(() => {
+      if (!hasSearchedRef.current) {
+        hasSearchedRef.current = true;
+        return;
+      }
+
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

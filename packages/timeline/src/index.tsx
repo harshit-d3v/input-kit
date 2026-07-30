@@ -660,7 +660,10 @@ export function TimelineItem({
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={isInteractive ? 0 : undefined}
-      role="listitem"
+      // A focusable, clickable element announced as a plain "list item" gives no
+      // indication it can be activated. Interactive entries take button semantics;
+      // static ones stay list items.
+      role={isInteractive ? 'button' : 'listitem'}
       aria-current={itemStatus === 'current' ? 'step' : undefined}
     >
       <div style={markerContainerStyle}>
@@ -862,8 +865,13 @@ export function TimelineGroup({
 
   return (
     <div className={className} style={style}>
-      <button type="button" style={headerStyle} onClick={() => setExpanded(!expanded)}>
-        <span style={chevronStyle}><ChevronRightIcon size={12} /></span>
+      <button
+        type="button"
+        style={headerStyle}
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+      >
+        <span style={chevronStyle} aria-hidden="true"><ChevronRightIcon size={12} /></span>
         <span style={titleStyle}>{title}</span>
         {count > 0 && <span style={countStyle}>{count}</span>}
       </button>

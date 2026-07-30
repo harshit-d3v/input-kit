@@ -204,12 +204,14 @@ function generateId(): string {
  * Format file size for display
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 B';
-  
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  // Clamped: sizes beyond the table used to index past its end and render
+  // "1024 undefined".
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
@@ -405,6 +407,17 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
     filesRef.current = files;
   }, [files]);
 
+  // Revoke every outstanding preview on unmount. Previews were only ever revoked by
+  // removeFile/clearFiles, so a component that unmounted with files still listed
+  // leaked one blob URL per image for the lifetime of the document.
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((f) => {
+        if (f.preview) revokePreviewUrl(f.preview);
+      });
+    };
+  }, []);
+
   // Validate file
   const validateFile = useCallback(
     (file: File): { valid: boolean; error?: string } => {
@@ -448,6 +461,13 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
           return;
         }
 
+        // Callbacks used to receive `fileItem` — the snapshot taken before the
+        // request started — so `file.status` was permanently 'idle' and
+        // `file.progress` permanently 0, even in onProgress. Read the live record
+        // instead, falling back to the snapshot if it has since been removed.
+        const currentFile = (): UploadFile =>
+          filesRef.current.find((f) => f.id === fileId) ?? fileItem;
+
         // Update status to uploading
         updateFiles((currentFiles) =>
           currentFiles.map((f) =>
@@ -455,7 +475,7 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
           )
         );
 
-        onUploadStart?.(fileItem);
+        onUploadStart?.(currentFile());
 
         const { xhr, abort } = uploadFile(fileItem.file, {
           url,
@@ -469,7 +489,7 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
             updateFiles((currentFiles) =>
               currentFiles.map((f) => (f.id === fileId ? { ...f, progress } : f))
             );
-            onProgress?.(fileItem, progress);
+            onProgress?.(currentFile(), progress);
           },
           onSuccess: (response) => {
             updateFiles((currentFiles) =>
@@ -479,7 +499,7 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
                   : f
               )
             );
-            onSuccess?.({ ...fileItem, status: 'success', progress: 100, response }, response);
+            onSuccess?.(currentFile(), response);
             activeUploadsRef.current--;
             processQueue();
             checkAllComplete();
@@ -501,7 +521,7 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
               )
             );
             if (nextStatus === 'error') {
-              onError?.({ ...fileItem, status: 'error', error }, error);
+              onError?.(currentFile(), error);
             }
             activeUploadsRef.current--;
             processQueue();
@@ -536,9 +556,11 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
     (newFiles: FileList | File[]) => {
       const fileArray = Array.from(newFiles);
       
-      // Check max files
+      // Check max files. `splice` with a negative start trims from the *end*, so
+      // when the list was already at or over the limit this used to let some of the
+      // new files through instead of none.
       if (maxFiles && filesRef.current.length + fileArray.length > maxFiles) {
-        const allowed = maxFiles - filesRef.current.length;
+        const allowed = Math.max(0, maxFiles - filesRef.current.length);
         fileArray.splice(allowed);
       }
 
@@ -659,6 +681,23 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
   // Retry failed upload
   const retryUpload = useCallback(
     async (id: string) => {
+      // Re-validate. Retry used to reset straight to 'idle' and queue the file, so a
+      // file rejected for exceeding maxFileSize would upload on the second attempt.
+      const target = filesRef.current.find((f) => f.id === id);
+      if (target) {
+        const validation = validateFile(target.file);
+        if (!validation.valid) {
+          updateFiles((currentFiles) =>
+            currentFiles.map((f) =>
+              f.id === id
+                ? { ...f, status: 'error' as UploadStatus, error: validation.error, progress: 0 }
+                : f
+            )
+          );
+          return;
+        }
+      }
+
       updateFiles((currentFiles) =>
         currentFiles.map((f) =>
           f.id === id
@@ -669,7 +708,7 @@ export function useUpload(options: UseUploadOptions): UseUploadReturn {
       uploadQueueRef.current.add(id);
       processQueue();
     },
-    [processQueue, updateFiles]
+    [processQueue, updateFiles, validateFile]
   );
 
   // Computed values

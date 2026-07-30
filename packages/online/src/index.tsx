@@ -24,7 +24,11 @@ export interface NetworkState {
 }
 
 export function useOnline(): NetworkState {
-  const [state, setState] = useState<NetworkState>({
+  // Lazy initialiser. The eager form rebuilt this whole object — including two
+  // `new Date()` allocations — on every render only to discard it, and calling
+  // `new Date()` during render makes the first render impure, so StrictMode's two
+  // passes disagreed.
+  const [state, setState] = useState<NetworkState>(() => ({
     online: typeof navigator !== 'undefined' ? navigator.onLine : true,
     offlineAt: typeof navigator !== 'undefined' && !navigator.onLine ? new Date() : undefined,
     onlineAt: typeof navigator !== 'undefined' && navigator.onLine ? new Date() : undefined,
@@ -32,7 +36,7 @@ export function useOnline(): NetworkState {
     effectiveType: undefined,
     rtt: undefined,
     saveData: undefined,
-  });
+  }));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -100,7 +104,9 @@ export function useOnline(): NetworkState {
 }
 
 export function useIsOnline(): boolean {
-  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== 'undefined' ? navigator.onLine : true
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

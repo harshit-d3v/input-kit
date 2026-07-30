@@ -78,35 +78,61 @@ function interpolate(
   });
 }
 
+const PLURAL_CATEGORIES: Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+/**
+ * Select a plural form from a `|`-separated template.
+ *
+ * Forms are read in CLDR category order — zero, one, two, few, many, other — and the
+ * category is chosen by `Intl.PluralRules` for the active locale. The previous
+ * implementation built the rules object and then ignored it, hardcoding
+ * `count === 1` for the two- and three-form cases. That is English's rule, so
+ * Russian "товар | товара | товаров" with count 21 selected the third form where
+ * CLDR requires the first.
+ *
+ * Where a template supplies fewer forms than the locale has categories, the last
+ * form is used as the catch-all.
+ */
 function pluralize(
   template: string,
   count: number,
   locale: string
 ): string {
-  // Simple pluralization: template can have format "one | other" or "zero | one | other"
+  // Only treat this as a plural template if it actually looks like one. Splitting
+  // unconditionally mangled any translation that merely contained a pipe —
+  // `t('crumbs', { count: 2 })` over "Home | Docs | API" returned "Docs".
+  if (!template.includes('|')) return template;
+
   const parts = template.split('|').map(s => s.trim());
-  
   if (parts.length === 1) return parts[0];
-  
-  // Use Intl.PluralRules for proper pluralization
-  const pluralRules = new Intl.PluralRules(locale);
-  const rule = pluralRules.select(count);
-  
-  if (parts.length === 2) {
-    // "one | other" format
-    return count === 1 ? parts[0] : parts[1];
+
+  let rule: Intl.LDMLPluralRule = 'other';
+  try {
+    rule = new Intl.PluralRules(locale).select(count);
+  } catch {
+    rule = count === 1 ? 'one' : 'other';
   }
-  
-  if (parts.length === 3) {
-    // "zero | one | other" format
+
+  // Which categories this locale actually distinguishes, in CLDR order. The template
+  // is assumed to list its forms in that same order.
+  let categories: Intl.LDMLPluralRule[];
+  try {
+    const resolved = new Intl.PluralRules(locale).resolvedOptions().pluralCategories;
+    categories = PLURAL_CATEGORIES.filter(c => resolved.includes(c));
+  } catch {
+    categories = ['one', 'other'];
+  }
+
+  // A template with an explicit extra leading form is the "zero | ..." convention.
+  if (parts.length === categories.length + 1 && !categories.includes('zero')) {
     if (count === 0) return parts[0];
-    if (count === 1) return parts[1];
-    return parts[2];
+    const index = categories.indexOf(rule);
+    return parts[index + 1] ?? parts[parts.length - 1];
   }
-  
-  // More complex pluralization based on locale rules
-  const ruleIndex = ['zero', 'one', 'two', 'few', 'many', 'other'].indexOf(rule);
-  return parts[Math.min(ruleIndex, parts.length - 1)] || parts[parts.length - 1];
+
+  const index = categories.indexOf(rule);
+  if (index === -1) return parts[parts.length - 1];
+  return parts[index] ?? parts[parts.length - 1];
 }
 
 // Context
@@ -253,13 +279,20 @@ export function LocaleSwitcher({
   style?: React.CSSProperties;
 }) {
   const { locale, setLocale, availableLocales } = useLocale();
+  // The display locale is the one currently selected, so the menu reads in the
+  // language the user is actually using. This used to pass `availableLocales` — the
+  // list being *labelled* — as the language to label them *in*.
   const displayNames = useMemo(() => {
     if (typeof Intl.DisplayNames === 'undefined') {
       return null;
     }
 
-    return new Intl.DisplayNames(availableLocales, { type: 'language' });
-  }, [availableLocales]);
+    try {
+      return new Intl.DisplayNames([locale], { type: 'language' });
+    } catch {
+      return null;
+    }
+  }, [locale]);
   
   return (
     <select
@@ -289,15 +322,44 @@ export function createTranslations<T extends Translations>(translations: T): T {
 }
 
 // Utility for merging translation files
-export function mergeMessages(...messageSets: LocaleMessages[]): LocaleMessages {
-  const result: LocaleMessages = {};
-  
-  for (const messages of messageSets) {
-    for (const [locale, translations] of Object.entries(messages)) {
-      result[locale] = { ...result[locale], ...translations };
+function deepMergeTranslations(base: Translations, incoming: Translations): Translations {
+  const result: Translations = { ...base };
+
+  for (const [key, value] of Object.entries(incoming)) {
+    const existing = result[key];
+
+    if (
+      existing !== undefined &&
+      typeof existing === 'object' &&
+      typeof value === 'object'
+    ) {
+      result[key] = deepMergeTranslations(existing, value);
+    } else {
+      result[key] = value;
     }
   }
-  
+
+  return result;
+}
+
+/**
+ * Merge translation files, deeply.
+ *
+ * This was a one-level spread, which is the wrong shape for the thing it exists to
+ * merge: translation files are nested by namespace, so merging
+ * `{ en: { common: { a } } }` with `{ en: { common: { b } } }` dropped `a` entirely.
+ */
+export function mergeMessages(...messageSets: LocaleMessages[]): LocaleMessages {
+  const result: LocaleMessages = {};
+
+  for (const messages of messageSets) {
+    for (const [locale, translations] of Object.entries(messages)) {
+      result[locale] = result[locale]
+        ? deepMergeTranslations(result[locale], translations)
+        : { ...translations };
+    }
+  }
+
   return result;
 }
 

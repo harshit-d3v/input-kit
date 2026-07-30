@@ -3,6 +3,7 @@
 import React, {
   useState,
   useCallback,
+  useMemo,
   useRef,
   useEffect,
   forwardRef,
@@ -85,30 +86,57 @@ export function useOtpInput(options: UseOtpInputOptions = {}): UseOtpInputReturn
   
   const pattern = PATTERNS[type];
   const isComplete = value.every(char => char !== '');
-  
+
+  // Callbacks live in a ref so they can change identity freely without re-running
+  // the notify effect. Passing them inline — the normal thing to do — used to make
+  // that effect fire on every render, which meant a filled OTP called `onComplete`
+  // again and again, submitting repeatedly.
+  const onChangeRef = useRef(onChange);
+  const onCompleteRef = useRef(onComplete);
+  onChangeRef.current = onChange;
+  onCompleteRef.current = onComplete;
+
+  // Resize the value array when `length` changes. It was seeded only by the useState
+  // initialiser, so growing `length` rendered inputs whose `value[index]` was
+  // undefined — flipping them from controlled to uncontrolled mid-life.
+  useEffect(() => {
+    setValueState((prev) =>
+      prev.length === length ? prev : Array.from({ length }, (_, i) => prev[i] ?? '')
+    );
+  }, [length]);
+
   // Focus management
   useEffect(() => {
     if (focusedIndex >= 0 && focusedIndex < length) {
       inputRefs.current[focusedIndex]?.focus();
     }
   }, [focusedIndex, length]);
-  
-  // Notify on change
+
+  // Notify on change — but not on mount, where nothing has been entered yet.
+  const hasNotifiedRef = useRef(false);
   useEffect(() => {
-    const stringValue = value.join('');
-    onChange?.(stringValue);
-    
-    if (isComplete) {
-      onComplete?.(stringValue);
+    if (!hasNotifiedRef.current) {
+      hasNotifiedRef.current = true;
+      return;
     }
-  }, [value, isComplete, onChange, onComplete]);
-  
+
+    const stringValue = value.join('');
+    onChangeRef.current?.(stringValue);
+
+    if (isComplete) {
+      onCompleteRef.current?.(stringValue);
+    }
+  }, [value, isComplete]);
+
   const setValue = useCallback((newValue: string) => {
+    // Filter before truncating. The other order dropped valid characters whenever the
+    // input contained separators: `setValue('12-345')` at length 4 sliced to `'12-3'`
+    // and then filtered to `'123'`, losing the 5. `handlePaste` always did it this way.
     const chars = newValue
-      .slice(0, length)
       .split('')
       .map((char) => normalizeOtpChar(char, type))
-      .filter((char) => pattern.test(char));
+      .filter((char) => pattern.test(char))
+      .slice(0, length);
     const padded = [...chars, ...Array(length - chars.length).fill('')];
     setValueState(padded);
   }, [length, pattern, type]);
@@ -141,20 +169,28 @@ export function useOtpInput(options: UseOtpInputOptions = {}): UseOtpInputReturn
   
   const handleKeyDown = useCallback((index: number, e: KeyboardEvent<HTMLInputElement>) => {
     switch (e.key) {
-      case 'Backspace':
+      case 'Backspace': {
         e.preventDefault();
-        setValueState(prev => {
-          const next = [...prev];
-          if (next[index]) {
+        // The focus move used to happen inside the state updater. Updaters must be
+        // pure — StrictMode invokes them twice, which moved focus two cells back.
+        if (value[index]) {
+          setValueState(prev => {
+            const next = [...prev];
             next[index] = '';
-          } else if (index > 0) {
+            return next;
+          });
+        } else if (index > 0) {
+          setValueState(prev => {
+            const next = [...prev];
             next[index - 1] = '';
-            setFocusedIndex(index - 1);
-          }
-          return next;
-        });
+            return next;
+          });
+          setFocusedIndex(index - 1);
+        }
         break;
-        
+      }
+
+
       case 'Delete':
         e.preventDefault();
         setValueState(prev => {
@@ -195,7 +231,7 @@ export function useOtpInput(options: UseOtpInputOptions = {}): UseOtpInputReturn
           handleChange(index, e.key);
         }
     }
-  }, [length, handleChange]);
+  }, [length, handleChange, value]);
   
   const handlePaste = useCallback((e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -280,12 +316,30 @@ export const OtpInput = forwardRef<HTMLDivElement, OtpInputProps>(
       autoFocus,
     });
     
-    // Sync controlled value
+    // Sync controlled value.
+    //
+    // Compare against what `setValue` will actually store, not the raw prop. The
+    // hook filters out characters that fail the type pattern, so comparing the raw
+    // string meant a `value` containing a separator ("12-34") never converged and the
+    // effect re-fired forever.
+    const normalizedControlled = useMemo(() => {
+      if (controlledValue === undefined) return undefined;
+      return controlledValue
+        .split('')
+        .map((char) => normalizeOtpChar(char, type))
+        .filter((char) => PATTERNS[type].test(char))
+        .slice(0, length)
+        .join('');
+    }, [controlledValue, type, length]);
+
     useEffect(() => {
-      if (controlledValue !== undefined && controlledValue !== value.join('')) {
+      if (
+        controlledValue !== undefined &&
+        normalizedControlled !== value.join('')
+      ) {
         setValue(controlledValue);
       }
-    }, [controlledValue, setValue, value]);
+    }, [controlledValue, normalizedControlled, setValue, value]);
     
     return (
       <div

@@ -131,6 +131,14 @@ export function useCrop(options: UseCropOptions = {}): UseCropReturn {
     } else if (isResizing && resizeHandle) {
       setCropAreaState(prev => {
         let { x, y, width, height } = prev;
+        // The right and bottom edges stay put when dragging a west/north handle, so
+        // clamping the size afterwards has to move `x`/`y` back to keep them fixed.
+        // Without that correction the width pinned at `minWidth` while `x` kept
+        // advancing, and the crop box walked across the image under the pointer.
+        const right = x + width;
+        const bottom = y + height;
+        const movesLeftEdge = resizeHandle === 'nw' || resizeHandle === 'sw' || resizeHandle === 'w';
+        const movesTopEdge = resizeHandle === 'nw' || resizeHandle === 'ne' || resizeHandle === 'n';
 
         switch (resizeHandle) {
           case 'nw':
@@ -172,10 +180,20 @@ export function useCrop(options: UseCropOptions = {}): UseCropReturn {
         // Apply constraints
         width = Math.max(minWidth, Math.min(maxWidth, width));
         height = Math.max(minHeight, Math.min(maxHeight, height));
-        
+
         if (aspectRatio) {
+          // Height follows width, so a vertical handle has to express its drag as a
+          // width change — otherwise the n/s handles are inert under a fixed ratio,
+          // which is how this behaved before.
+          if (resizeHandle === 'n' || resizeHandle === 's') {
+            width = Math.max(minWidth, Math.min(maxWidth, height * aspectRatio));
+          }
           height = width / aspectRatio;
         }
+
+        // Re-anchor the edges the handle was not supposed to move.
+        if (movesLeftEdge) x = right - width;
+        if (movesTopEdge) y = bottom - height;
 
         return { x, y, width, height };
       });

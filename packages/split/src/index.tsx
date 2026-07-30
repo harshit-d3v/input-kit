@@ -197,7 +197,18 @@ export function useSplitPane(
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const startPosRef = useRef(0);
   const startSizesRef = useRef<number[]>([]);
-  
+
+  // `sizes` is seeded once by useState, so adding or removing a pane would otherwise
+  // leave the array the wrong length and emit `flex: 0 0 calc(undefined% - 4px)`.
+  // Redistribute evenly when the count changes; this does not notify onSizesChange
+  // because it is a structural reset rather than a user resize.
+  useEffect(() => {
+    setSizesState((prev) =>
+      prev.length === paneCount ? prev : Array(paneCount).fill(100 / paneCount)
+    );
+  }, [paneCount]);
+
+
   const setSizes = useCallback((newSizes: number[]) => {
     setSizesState(newSizes);
     onSizesChange?.(newSizes);
@@ -302,6 +313,7 @@ function Gutter({
   style,
 }: GutterProps) {
   const isHorizontal = direction === 'horizontal';
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const previousKey = isHorizontal ? 'ArrowLeft' : 'ArrowUp';
@@ -336,7 +348,10 @@ function Gutter({
       onReset(index);
     }
   };
-  
+
+  // Hover shading goes through state rather than writing to `currentTarget.style`
+  // directly — the imperative version permanently clobbered a `background` passed in
+  // via `style`, because React never knew to patch it back.
   return (
     <div
       role="separator"
@@ -351,9 +366,11 @@ function Gutter({
       onDoubleClick={() => onReset(index)}
       onKeyDown={handleKeyDown}
       title="Drag or use arrow keys to resize"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
         flex: `0 0 ${size}px`,
-        background: '#e5e7eb',
+        background: isHovered ? '#d1d5db' : '#e5e7eb',
         cursor: isHorizontal ? 'col-resize' : 'row-resize',
         display: 'flex',
         alignItems: 'center',
@@ -362,12 +379,6 @@ function Gutter({
         userSelect: 'none',
         touchAction: 'none',
         ...style,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = '#d1d5db';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = '#e5e7eb';
       }}
     >
       {/* Drag handle indicator */}
@@ -384,6 +395,16 @@ function Gutter({
 }
 
 // Pane Component
+/**
+ * Optional wrapper for a pane's contents.
+ *
+ * Sizing is owned by the wrapper `SplitPane` renders around every child, so this
+ * component only carries per-pane constraints and styling. It used to try to
+ * discover its own index by walking `parentElement.children` for `data-pane`
+ * siblings — but that wrapper is its only sibling scope, so the probe always
+ * resolved to `0` and every `Pane` claimed `sizes[0]`, with its `flex` fighting the
+ * wrapper's.
+ */
 export function Pane({
   children,
   minSize,
@@ -391,31 +412,15 @@ export function Pane({
   className,
   style,
 }: PaneProps) {
-  const { direction, sizes } = useSplitContext();
+  const { direction } = useSplitContext();
   const isHorizontal = direction === 'horizontal';
-  
-  // Find this pane's index by looking at siblings
-  const ref = useRef<HTMLDivElement>(null);
-  const [index, setIndex] = useState(0);
-  
-  useEffect(() => {
-    if (ref.current?.parentElement) {
-      const children = Array.from(ref.current.parentElement.children);
-      const panes = children.filter(child => child.getAttribute('data-pane') === 'true');
-      const idx = panes.indexOf(ref.current);
-      setIndex(idx >= 0 ? idx : 0);
-    }
-  }, []);
-  
-  const size = sizes[index] ?? (100 / sizes.length);
-  
+
   return (
     <div
-      ref={ref}
-      data-pane="true"
       className={className}
       style={{
-        flex: `1 1 ${size}%`,
+        width: '100%',
+        height: '100%',
         minWidth: isHorizontal ? minSize : undefined,
         minHeight: !isHorizontal ? minSize : undefined,
         maxWidth: isHorizontal ? maxSize : undefined,
@@ -466,11 +471,26 @@ export function SplitPane({
     onSizesChange,
   });
   
-  // Sync controlled sizes
+  // Sync controlled sizes.
+  //
+  // This deliberately compares by value rather than by array identity. The
+  // documented usage passes an inline literal (`sizes={[30, 70]}`), which is a new
+  // array every render — keying the effect on that identity meant it fired on every
+  // render, set new state, and re-rendered forever.
+  const appliedSizesRef = useRef<number[] | null>(null);
   useEffect(() => {
-    if (controlledSizes) {
-      setSizes(controlledSizes);
-    }
+    if (!controlledSizes) return;
+
+    const previous = appliedSizesRef.current;
+    const unchanged =
+      previous !== null &&
+      previous.length === controlledSizes.length &&
+      previous.every((size, index) => size === controlledSizes[index]);
+
+    if (unchanged) return;
+
+    appliedSizesRef.current = [...controlledSizes];
+    setSizes(controlledSizes);
   }, [controlledSizes, setSizes]);
   
   const isHorizontal = direction === 'horizontal';
@@ -492,8 +512,11 @@ export function SplitPane({
   const content: ReactNode[] = [];
   childArray.forEach((child, index) => {
     // Clone child with size prop
+    // `sizes` can lag `childArray` by one render when children are added, so fall
+    // back to an even share rather than emitting `calc(undefined% - 4px)`.
+    const paneSize = sizes[index] ?? 100 / paneCount;
     const paneStyle: React.CSSProperties = {
-      flex: `0 0 calc(${sizes[index]}% - ${(gutterSize * (paneCount - 1)) / paneCount}px)`,
+      flex: `0 0 calc(${paneSize}% - ${(gutterSize * (paneCount - 1)) / paneCount}px)`,
       overflow: 'auto',
     };
     
@@ -612,15 +635,23 @@ export function CollapsibleSplit({
   style?: React.CSSProperties;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(collapsed);
-  const [savedSize, _setSavedSize] = useState(defaultSize);
-  
+
+  // `collapsed` seeded useState and nothing else, so a parent that flipped it after
+  // mount was ignored. Track it.
+  useEffect(() => {
+    setIsCollapsed(collapsed);
+  }, [collapsed]);
+
   const handleToggle = () => {
     const newCollapsed = !isCollapsed;
     setIsCollapsed(newCollapsed);
     onCollapsedChange?.(newCollapsed);
   };
-  
-  const currentSize = isCollapsed ? collapsedSize : savedSize;
+
+  // This pane is a fixed width that collapses; it is not draggable. There used to be
+  // a `savedSize` state here whose setter was never called, which read as though drag
+  // resizing were coming. Use `SplitPane` if you need a resizable divider.
+  const currentSize = isCollapsed ? collapsedSize : defaultSize;
   const isHorizontal = direction === 'horizontal';
   
   return (

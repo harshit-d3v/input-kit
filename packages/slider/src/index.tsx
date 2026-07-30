@@ -174,9 +174,11 @@ export function useSlider(options: UseSliderOptions = {}): UseSliderReturn {
   
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (disabled) return;
-    
-    setIsDragging(true);
+
     const touch = e.touches[0];
+    if (!touch) return;
+
+    setIsDragging(true);
     handleMove(touch.clientX, touch.clientY);
   }, [disabled, handleMove]);
   
@@ -327,8 +329,11 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
       ? { left: `${slider.percentage}%`, top: '50%', transform: 'translate(-50%, -50%)' }
       : { bottom: `${slider.percentage}%`, left: '50%', transform: 'translate(-50%, 50%)' };
     
-    const ticks = showTicks
-      ? Array.from({ length: tickCount }, (_, i) => (i / (tickCount - 1)) * 100)
+    // `tickCount` of 1 made `i / (tickCount - 1)` a 0/0 NaN, emitting `left: NaN%`.
+    const ticks = showTicks && tickCount > 0
+      ? tickCount === 1
+        ? [0]
+        : Array.from({ length: tickCount }, (_, i) => (i / (tickCount - 1)) * 100)
       : [];
     
     return (
@@ -351,6 +356,9 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
             background: '#e5e7eb',
             borderRadius: '4px',
             cursor: disabled ? 'not-allowed' : 'pointer',
+            // Without this the browser claims the gesture for scrolling and the
+            // slider cannot be dragged on a touch device at all.
+            touchAction: 'none',
             ...trackStyle,
           }}
         >
@@ -639,6 +647,7 @@ export const RangeSlider = forwardRef<HTMLDivElement, RangeSliderProps>(
             background: '#e5e7eb',
             borderRadius: '4px',
             cursor: disabled ? 'not-allowed' : 'pointer',
+            touchAction: 'none',
             ...(isHorizontal ? { width: '100%', height: '8px' } : { width: '8px', height: '200px' }),
           }}
         >

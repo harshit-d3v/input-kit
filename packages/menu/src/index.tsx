@@ -3,6 +3,7 @@
 import React, {
   useState,
   useCallback,
+  useId,
   useRef,
   useEffect,
   ReactNode,
@@ -90,7 +91,14 @@ export function useContextMenu(options: UseContextMenuOptions = {}): UseContextM
     onOpen?.(pos);
   }, [disabled, onOpen]);
   
+  // Idempotent: `Menu` now owns outside-click and Escape dismissal too, so `close`
+  // can arrive twice for one gesture. Only the first should notify.
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+
   const close = useCallback(() => {
+    if (!isOpenRef.current) return;
+    isOpenRef.current = false;
     setIsOpen(false);
     onClose?.();
   }, [onClose]);
@@ -140,8 +148,10 @@ export function Menu({
   onSelect,
   className,
   style,
-}: MenuProps) {
+  isSubmenu = false,
+}: MenuProps & { isSubmenu?: boolean }) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuId = useId();
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const [submenuItem, setSubmenuItem] = useState<MenuItem | null>(null);
   const [submenuPosition, setSubmenuPosition] = useState<MenuPosition>({ x: 0, y: 0 });
@@ -180,8 +190,16 @@ export function Menu({
     setFocusedIndex(firstEnabledIndex);
   }, [navigableItems]);
   
-  // Keyboard navigation
+  // Keyboard navigation.
+  //
+  // Only one menu in a chain may own the keyboard. Every mounted `Menu` used to bind
+  // its own document listener, so with a submenu open ArrowDown moved the highlight
+  // in the parent and the child at the same time. While a submenu is showing, the
+  // parent stands down; a submenu never opens a submenu of its own here.
+  const hasOpenSubmenu = submenuItem !== null;
   useEffect(() => {
+    if (hasOpenSubmenu) return;
+
     const handleKeyDown = (e: globalThis.KeyboardEvent) => {
       switch (e.key) {
         case 'ArrowDown':
@@ -224,8 +242,40 @@ export function Menu({
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusedIndex, getNextEnabledIndex, navigableItems, onClose, onSelect]);
-  
+  }, [focusedIndex, getNextEnabledIndex, hasOpenSubmenu, navigableItems, onClose, onSelect]);
+
+  // Dismiss on outside click and on Escape.
+  //
+  // This used to live only in `useContextMenu`, which `DropdownMenu` does not use —
+  // so a dropdown could not be closed by clicking away from it. Owning it here means
+  // every way of opening a `Menu` gets the behaviour. Submenus skip it: the root menu
+  // already covers the whole chain, and the root's own `onClose` is passed down.
+  useEffect(() => {
+    if (isSubmenu || typeof document === 'undefined') return;
+
+    const handleOutsideClick = (e: globalThis.MouseEvent) => {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      onClose();
+    };
+
+    const handleEscape = (e: globalThis.KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    // Deferred so the click that opened the menu does not immediately close it.
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleOutsideClick);
+      document.addEventListener('keydown', handleEscape);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleOutsideClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isSubmenu, onClose]);
+
+
   // Adjust position to stay in viewport
   const adjustedPosition = clampMenuPosition(position, items.length);
   
@@ -271,6 +321,12 @@ export function Menu({
       <div
         ref={menuRef}
         role="menu"
+        tabIndex={-1}
+        aria-activedescendant={
+          focusedIndex >= 0 && navigableItems[focusedIndex]
+            ? `${menuId}-item-${navigableItems[focusedIndex].id}`
+            : undefined
+        }
         className={className}
         style={{
           position: 'fixed',
@@ -306,6 +362,7 @@ export function Menu({
           return (
             <div
               key={item.id}
+              id={`${menuId}-item-${item.id}`}
               data-id={item.id}
               data-index={navIndex}
               role="menuitem"
@@ -351,6 +408,7 @@ export function Menu({
           position={submenuPosition}
           onClose={onClose}
           onSelect={onSelect}
+          isSubmenu
         />
       )}
     </>,

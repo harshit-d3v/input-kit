@@ -92,8 +92,31 @@ export function JSONViewer({
     }
   }, [data, enableClipboard]);
 
-  const renderValue = (value: unknown, key?: string, depth = 0): React.ReactNode => {
+  // Tracks the ancestors of the value currently being rendered. Without it a cyclic
+  // object recursed until the stack overflowed and took the whole app down.
+  const renderValue = (
+    value: unknown,
+    key?: string,
+    depth = 0,
+    ancestors: readonly object[] = []
+  ): React.ReactNode => {
     const type = value === null ? 'null' : typeof value;
+
+    if (value !== null && typeof value === 'object') {
+      if (ancestors.includes(value as object)) {
+        return (
+          <span style={{ color: colors.null, opacity: 0.8 }}>
+            {key && <span style={{ color: colors.key }}>{key}: </span>}
+            [Circular]
+          </span>
+        );
+      }
+    }
+
+    const nextAncestors =
+      value !== null && typeof value === 'object'
+        ? [...ancestors, value as object]
+        : ancestors;
 
     if (type === 'string') {
       const stringValue = String(value);
@@ -153,12 +176,31 @@ export function JSONViewer({
           collapsed={collapsed}
           displayObjectSize={displayObjectSize}
           colors={colors}
-          renderValue={renderValue}
+          renderValue={(v, k, d) => renderValue(v, k, d, nextAncestors)}
         />
       );
     }
 
     if (type === 'object') {
+      // Date, Map, Set and RegExp all satisfy `typeof === 'object'` but expose no
+      // own enumerable keys, so they used to render as an empty `{0 keys}`.
+      if (
+        value instanceof Date ||
+        value instanceof RegExp ||
+        value instanceof Map ||
+        value instanceof Set
+      ) {
+        return (
+          <span style={{ color: colors.string }}>
+            {key && <span style={{ color: colors.key }}>{key}: </span>}
+            {value instanceof Date ? value.toISOString() : String(value)}
+            {displayDataTypes && (
+              <span style={{ opacity: 0.5 }}> ({value.constructor.name})</span>
+            )}
+          </span>
+        );
+      }
+
       return (
         <JSONObject
           data={value as Record<string, unknown>}
@@ -167,8 +209,18 @@ export function JSONViewer({
           collapsed={collapsed}
           displayObjectSize={displayObjectSize}
           colors={colors}
-          renderValue={renderValue}
+          renderValue={(v, k, d) => renderValue(v, k, d, nextAncestors)}
         />
+      );
+    }
+
+    // `undefined` reaches here; render the key so the row is not silently blank.
+    if (type === 'undefined') {
+      return (
+        <span style={{ color: colors.null, opacity: 0.7 }}>
+          {key && <span style={{ color: colors.key }}>{key}: </span>}
+          undefined
+        </span>
       );
     }
 
@@ -221,10 +273,23 @@ function JSONArray({ data, keyName, depth, collapsed, displayObjectSize, colors,
 
   return (
     <div>
-      <span onClick={() => setIsCollapsed(!isCollapsed)} style={{ cursor: 'pointer' }}>
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        aria-expanded={!isCollapsed}
+        style={{
+          cursor: 'pointer',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          font: 'inherit',
+          color: 'inherit',
+          textAlign: 'left',
+        }}
+      >
         {keyName && <span style={{ color: colors.key }}>{keyName}: </span>}
         {isCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />} [{displayObjectSize && `${data.length} items`}]
-      </span>
+      </button>
       {!isCollapsed && (
         <div style={{ marginLeft: 20 }}>
           {data.map((item, index) => (
@@ -258,10 +323,23 @@ function JSONObject({ data, keyName, depth, collapsed, displayObjectSize, colors
 
   return (
     <div>
-      <span onClick={() => setIsCollapsed(!isCollapsed)} style={{ cursor: 'pointer' }}>
+      <button
+        type="button"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        aria-expanded={!isCollapsed}
+        style={{
+          cursor: 'pointer',
+          background: 'none',
+          border: 'none',
+          padding: 0,
+          font: 'inherit',
+          color: 'inherit',
+          textAlign: 'left',
+        }}
+      >
         {keyName && <span style={{ color: colors.key }}>{keyName}: </span>}
         {isCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />} {'{'}{displayObjectSize && `${keys.length} keys`}{'}'}
-      </span>
+      </button>
       {!isCollapsed && (
         <div style={{ marginLeft: 20 }}>
           {keys.map((k) => (

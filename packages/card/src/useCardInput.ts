@@ -1,6 +1,6 @@
 // @input-kit/card - useCardInput hook
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   CardType,
   CardErrors,
@@ -49,15 +49,33 @@ export function useCardInput(options: UseCardInputOptions = {}): UseCardInputRet
   const isCvvValid = cvvValidation.isValid;
   const isValid = isCardNumberValid && isExpiryValid && isCvvValid;
 
-  // Notify card type changes
-  useEffect(() => {
-    onCardTypeChange?.(cardType);
-  }, [cardType, onCardTypeChange]);
+  // Callbacks go through refs so their identity does not drive the effects. Passed
+  // inline — the normal thing to do — they used to change every render, so both
+  // notifications fired on every render rather than only when the value changed, and
+  // both fired once on mount before the user had entered anything.
+  const onCardTypeChangeRef = useRef(onCardTypeChange);
+  const onValidationChangeRef = useRef(onValidationChange);
+  onCardTypeChangeRef.current = onCardTypeChange;
+  onValidationChangeRef.current = onValidationChange;
 
-  // Notify validation changes
+  const hasNotifiedTypeRef = useRef(false);
+  const hasNotifiedValidRef = useRef(false);
+
   useEffect(() => {
-    onValidationChange?.(isValid);
-  }, [isValid, onValidationChange]);
+    if (!hasNotifiedTypeRef.current) {
+      hasNotifiedTypeRef.current = true;
+      return;
+    }
+    onCardTypeChangeRef.current?.(cardType);
+  }, [cardType]);
+
+  useEffect(() => {
+    if (!hasNotifiedValidRef.current) {
+      hasNotifiedValidRef.current = true;
+      return;
+    }
+    onValidationChangeRef.current?.(isValid);
+  }, [isValid]);
 
   const setCardNumber = useCallback((value: string) => {
     const cleaned = value.replace(/\D/g, '');

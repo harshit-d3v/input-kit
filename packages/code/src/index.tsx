@@ -259,23 +259,20 @@ export function CodeBlock({
   const tokensByLine = useMemo(() => {
     const result: Token[][] = lines.map(() => []);
     let lineIndex = 0;
-    let charIndex = 0;
-    
+
     for (const token of tokens) {
       const tokenLines = token.value.split('\n');
-      
+
       tokenLines.forEach((line, i) => {
         if (i > 0) {
           lineIndex++;
-          charIndex = 0;
         }
         if (line && lineIndex < result.length) {
           result[lineIndex].push({ type: token.type, value: line });
         }
-        charIndex += line.length;
       });
     }
-    
+
     return result;
   }, [tokens, lines]);
 
@@ -331,6 +328,10 @@ export function CodeBlock({
                 key={lineIndex}
                 style={{
                   display: 'flex',
+                  // Each line is already its own block, so it needs a height of its
+                  // own when empty. It used to render a literal '\n' inside the
+                  // <pre>, which showed every blank line as two.
+                  minHeight: '1.5em',
                   background: isHighlighted ? colors.lineHighlight : 'transparent',
                   marginLeft: showLineNumbers ? 0 : undefined,
                   paddingLeft: isHighlighted ? '8px' : undefined,
@@ -353,9 +354,7 @@ export function CodeBlock({
                   </span>
                 )}
                 <span style={{ flex: 1 }}>
-                  {lineTokens.length === 0 ? (
-                    '\n'
-                  ) : (
+                  {lineTokens.length === 0 ? null : (
                     lineTokens.map((token, tokenIndex) => (
                       <span
                         key={tokenIndex}

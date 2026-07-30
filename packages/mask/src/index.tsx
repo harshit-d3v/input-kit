@@ -3,6 +3,7 @@
 import React, {
   useState,
   useCallback,
+  useMemo,
   useRef,
   useEffect,
   forwardRef,
@@ -72,14 +73,29 @@ export const masks = {
   currency: '$999,999.99',
 };
 
-// Mask character definitions
+// Mask character definitions.
+//
+// `A` and `a` share a pattern but differ in casing, so they are distinct regex
+// *instances* — `parseMask` copies the reference through, and `conformToMask`
+// compares identity to decide whether to transform the typed character. `A` was
+// documented as uppercasing since the first release but never did; the shipped
+// `masks.time12` ('99:99 AA') depends on it.
+const UPPERCASE_LETTER = /[a-zA-Z]/;
+const LOWERCASE_LETTER = /[a-zA-Z]/;
+
 const MASK_CHARS: Record<string, RegExp> = {
-  '9': /\d/,           // Any digit
-  'a': /[a-zA-Z]/,     // Any letter
-  'A': /[a-zA-Z]/,     // Any letter (will be uppercased)
-  '*': /[a-zA-Z0-9]/,  // Any alphanumeric
-  '#': /[0-9a-fA-F]/,  // Hex character
+  '9': /\d/,                 // Any digit
+  'a': LOWERCASE_LETTER,     // Any letter, lowercased
+  'A': UPPERCASE_LETTER,     // Any letter, uppercased
+  '*': /[a-zA-Z0-9]/,        // Any alphanumeric
+  '#': /[0-9a-fA-F]/,        // Hex character
 };
+
+function applyMaskCasing(char: string, maskChar: MaskChar): string {
+  if (maskChar === UPPERCASE_LETTER) return char.toUpperCase();
+  if (maskChar === LOWERCASE_LETTER) return char.toLowerCase();
+  return char;
+}
 
 // Utility functions
 function parseMask(mask: string | MaskChar[]): MaskChar[] {
@@ -145,7 +161,7 @@ function conformToMask(
         valueIndex++;
         
         if ((maskChar as RegExp).test(inputChar)) {
-          result += inputChar;
+          result += applyMaskCasing(inputChar, maskChar);
           break;
         }
       }
@@ -227,7 +243,10 @@ export function useMask(options: UseMaskOptions): UseMaskReturn {
     onChange,
   } = options;
   
-  const mask = parseMask(maskInput);
+  // Memoised: `parseMask` returned a fresh array on every render, and that array is a
+  // dependency of every callback below — so none of the memoisation did anything, and
+  // `MaskedInput`'s sync effect (which depends on `setValue`) ran on every render.
+  const mask = useMemo(() => parseMask(maskInput), [maskInput]);
   const inputRef = useRef<HTMLInputElement>(null);
   const [value, setValueState] = useState('');
   
@@ -268,40 +287,49 @@ export function useMask(options: UseMaskOptions): UseMaskReturn {
     const input = e.currentTarget;
     const caretPosition = input.selectionStart || 0;
     
+    // Clearing a slot means writing the placeholder in guide mode, but simply
+    // removing the character when guide mode is off — the value holds no
+    // placeholders there, so splicing one in used to type a literal `_` into the
+    // field every time the user pressed Backspace.
+    const clearAt = (source: string, position: number) =>
+      guide
+        ? source.slice(0, position) + placeholderChar + source.slice(position + 1)
+        : source.slice(0, position) + source.slice(position + 1);
+
     if (e.key === 'Backspace' && caretPosition > 0) {
       // Find previous editable position
       let targetPos = caretPosition - 1;
       while (targetPos >= 0 && !isEditablePosition(mask[targetPos])) {
         targetPos--;
       }
-      
+
       if (targetPos >= 0) {
         e.preventDefault();
-        const newValue = value.slice(0, targetPos) + placeholderChar + value.slice(targetPos + 1);
+        const newValue = clearAt(value, targetPos);
         setValueState(newValue);
         onChange?.(newValue, getRawValue(newValue, mask, placeholderChar));
-        
+
         requestAnimationFrame(() => {
           input.setSelectionRange(targetPos, targetPos);
         });
       }
     }
-    
+
     if (e.key === 'Delete' && caretPosition < value.length) {
       // Find next editable position
       let targetPos = caretPosition;
       while (targetPos < mask.length && !isEditablePosition(mask[targetPos])) {
         targetPos++;
       }
-      
+
       if (targetPos < mask.length) {
         e.preventDefault();
-        const newValue = value.slice(0, targetPos) + placeholderChar + value.slice(targetPos + 1);
+        const newValue = clearAt(value, targetPos);
         setValueState(newValue);
         onChange?.(newValue, getRawValue(newValue, mask, placeholderChar));
       }
     }
-  }, [mask, value, placeholderChar, onChange]);
+  }, [mask, value, guide, placeholderChar, onChange]);
   
   const handleFocus = useCallback((e: FocusEvent<HTMLInputElement>) => {
     if (!value && guide) {
@@ -370,20 +398,28 @@ export const MaskedInput = forwardRef<HTMLInputElement, MaskedInputProps>(
       onChange,
     });
     
-    // Sync with controlled value
+    // Sync with controlled value.
+    //
+    // The comparison has to conform with the *same* guide setting the hook was given.
+    // It previously used the `guide` prop while the hook received
+    // `showMaskOnFocus ? guide : false` — so with `showMaskOnFocus={false}` and
+    // `guide` on, the two strings could never match, and the effect set state on
+    // every render forever.
+    const effectiveGuide = showMaskOnFocus ? guide : false;
+
     useEffect(() => {
-      if (controlledValue !== undefined) {
-        const parsedMask = parseMask(mask);
-        const { value: conformedValue } = conformToMask(controlledValue, parsedMask, {
-          guide,
-          placeholderChar,
-        });
-        // Only update if different to avoid loops
-        if (conformedValue !== value) {
-          setValue(controlledValue);
-        }
+      if (controlledValue === undefined) return;
+
+      const parsedMask = parseMask(mask);
+      const { value: conformedValue } = conformToMask(controlledValue, parsedMask, {
+        guide: effectiveGuide,
+        placeholderChar,
+      });
+
+      if (conformedValue !== value) {
+        setValue(controlledValue);
       }
-    }, [controlledValue, guide, mask, placeholderChar, setValue, value]);
+    }, [controlledValue, effectiveGuide, mask, placeholderChar, setValue, value]);
 
     const setInputRefs = useCallback((node: HTMLInputElement | null) => {
       inputRef.current = node;

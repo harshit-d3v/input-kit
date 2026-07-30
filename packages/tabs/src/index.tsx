@@ -266,7 +266,14 @@ export function TabList({
   );
 }
 
-export function Tab({
+/**
+ * A tab trigger. Must be a direct child of `TabList`, which injects the wiring.
+ *
+ * The signature is `TabProps`, not `InternalTabProps` — the internal `__`-prefixed
+ * props used to be part of the exported type, so they autocompleted for consumers and
+ * could be passed in from outside.
+ */
+function TabImpl({
   children,
   disabled = false,
   className,
@@ -333,7 +340,7 @@ export function TabPanels({ children, className, style }: TabPanelsProps) {
   );
 }
 
-export function TabPanel({
+function TabPanelImpl({
   children,
   className,
   style,
@@ -365,6 +372,11 @@ export function TabPanel({
     </div>
   );
 }
+
+// Re-exported under the public prop types. `TabList` / `TabPanels` still clone them
+// with the internal props, which is invisible to consumers.
+export const Tab = TabImpl as (props: TabProps) => ReactElement;
+export const TabPanel = TabPanelImpl as (props: TabPanelProps) => ReactElement;
 
 export function useTabsContext() {
   return useTabs();

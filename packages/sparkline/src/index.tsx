@@ -1,6 +1,6 @@
 // @input-kit/sparkline - Sparkline chart components
 
-import React, { useMemo } from 'react';
+import React, { useId, useMemo } from 'react';
 
 // Types
 export interface SparklineProps {
@@ -146,12 +146,17 @@ function getSparklineGeometry({
   const chartWidth = width - padding * 2;
   const chartHeight = height - padding * 2;
 
+  // Mark the first occurrence only. Comparing by value meant a series with a repeated
+  // low drew a marker at every one of them, and a flat series marked every point.
+  const minIndex = sourceData.indexOf(min);
+  const maxIndex = sourceData.indexOf(max);
+
   const points = values.map((value, index) => ({
     x: padding + (index / (values.length - 1 || 1)) * chartWidth,
     y: padding + (1 - value) * chartHeight,
     value: sourceData[index],
-    isMin: sourceData[index] === min,
-    isMax: sourceData[index] === max,
+    isMin: index === minIndex,
+    isMax: index === maxIndex,
   }));
 
   const linePath = createPath(points, curved);
@@ -219,9 +224,14 @@ function renderSparklineGraphic({
         strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
+        // `pathLength` normalises the rendered path to 100 units, so the dash maths
+        // is exact whatever the geometry. `geometry.pathLength` sums straight-line
+        // distances between points, which undershoots a bezier — and `curved`
+        // defaults to true, so the animation used to start part-drawn.
+        pathLength={animated ? 100 : undefined}
         style={animated ? {
-          strokeDasharray: geometry.pathLength,
-          strokeDashoffset: geometry.pathLength,
+          strokeDasharray: 100,
+          strokeDashoffset: 100,
           animation: 'sparkline-draw 1s ease-out forwards',
         } : undefined}
       />
@@ -356,7 +366,9 @@ export function SparkArea({
   style,
   ...rest
 }: SparkAreaProps) {
-  const gradientId = useMemo(() => `spark-gradient-${Math.random().toString(36).slice(2)}`, []);
+  // useId, not Math.random: the random version produced a different id on the server
+  // than on the client, so the `url(#…)` reference broke hydration.
+  const gradientId = `spark-gradient-${useId().replace(/:/g, '')}`;
   const geometry = useMemo(() => getSparklineGeometry({
     data,
     limit,
@@ -429,37 +441,42 @@ export function SparkBar({
   style,
 }: SparkBarProps) {
   const sourceData = useMemo(() => limit && limit > 0 ? data.slice(-limit) : data, [data, limit]);
-  const { values, min } = useMemo(() => normalizeData(sourceData), [sourceData]);
+  const { min, max } = useMemo(() => normalizeData(sourceData), [sourceData]);
   const hasNegative = min < 0;
-  
+
   const bars = useMemo(() => {
     if (sourceData.length === 0) return [];
-    
+
     const padding = 2;
     const chartWidth = width - padding * 2;
     const chartHeight = height - padding * 2;
-    
+
     const calculatedBarWidth = barWidth || (chartWidth - gap * (sourceData.length - 1)) / sourceData.length;
-    
-    return values.map((v, i) => {
+
+    // Bar height is the distance from the zero line, not the value's position across
+    // the whole range. The old version scaled the normalised 0–1 position, so for
+    // [-10, 0, 10] the zero bar rendered half height and the most-negative bar
+    // rendered nothing at all.
+    const baseY = hasNegative ? chartHeight / 2 + padding : height - padding;
+    const scale = hasNegative
+      ? (chartHeight / 2) / Math.max(Math.abs(min), Math.abs(max), 1)
+      : chartHeight / (max || 1);
+
+    return sourceData.map((value, i) => {
       const x = padding + i * (calculatedBarWidth + gap);
-      const barHeight = v * chartHeight;
-      const isNegative = sourceData[i] < 0;
-      
-      // Handle negative values
-      const baseY = hasNegative ? chartHeight / 2 + padding : height - padding;
-      const y = isNegative ? baseY : baseY - barHeight;
-      
+      const isNegative = value < 0;
+      const barHeight = Math.abs(value) * scale;
+
       return {
         x,
-        y,
+        y: isNegative ? baseY : baseY - barHeight,
         width: calculatedBarWidth,
-        height: Math.abs(barHeight),
+        height: barHeight,
         isNegative,
-        value: sourceData[i],
+        value,
       };
     });
-  }, [sourceData, values, width, height, barWidth, gap, hasNegative]);
+  }, [sourceData, width, height, barWidth, gap, hasNegative, min, max]);
 
   if (sourceData.length === 0) return null;
 

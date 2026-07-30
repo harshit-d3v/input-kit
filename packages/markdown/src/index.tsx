@@ -51,9 +51,11 @@ function sanitizeUrl(url?: string): string | undefined {
   const trimmed = url.trim();
   if (!trimmed) return undefined;
 
+  // `//evil.com` is a protocol-relative URL, not an internal path — it navigates
+  // off-origin. Only a single leading slash counts as same-origin.
   if (
     trimmed.startsWith('#') ||
-    trimmed.startsWith('/') ||
+    (trimmed.startsWith('/') && !trimmed.startsWith('//')) ||
     trimmed.startsWith('./') ||
     trimmed.startsWith('../')
   ) {
@@ -136,8 +138,10 @@ function parseInline(text: string): Token[] {
       continue;
     }
     
-    // Italic *text* or _text_
-    const italicMatch = remaining.match(/^(\*|_)(.+?)\1/);
+    // Italic *text* or _text_.
+    // CommonMark requires the opening delimiter to be followed by a non-space, so
+    // that arithmetic like `2 * 3 * 4` is not rendered as an emphasis run.
+    const italicMatch = remaining.match(/^(\*|_)(\S(?:.*?\S)?)\1/);
     if (italicMatch) {
       tokens.push({ type: 'em', children: parseInline(italicMatch[2]) });
       remaining = remaining.slice(italicMatch[0].length);
@@ -306,11 +310,20 @@ function parseMarkdown(content: string): Token[] {
       }
       
       if (tableLines.length >= 2) {
-        const headerCells = tableLines[0].split('|').map(c => c.trim()).filter(Boolean);
-        const bodyRows = tableLines.slice(2).map(row => 
-          row.split('|').map(c => c.trim()).filter(Boolean)
-        );
-        
+        // Strip only the empty cells produced by leading/trailing pipes. The previous
+        // `.filter(Boolean)` also deleted genuinely empty cells, so `| a |  | c |`
+        // collapsed to two columns and shifted `c` under the second heading.
+        const splitRow = (row: string): string[] => {
+          const cells = row.split('|').map(c => c.trim());
+          if (cells.length > 0 && cells[0] === '') cells.shift();
+          if (cells.length > 0 && cells[cells.length - 1] === '') cells.pop();
+          return cells;
+        };
+
+        const headerCells = splitRow(tableLines[0]);
+        const bodyRows = tableLines.slice(2).map(splitRow);
+
+
         tokens.push({
           type: 'table',
           children: [
@@ -407,8 +420,14 @@ export function Markdown({
   components: customComponents = {},
 }: MarkdownProps) {
   const tokens = useMarkdown(content);
-  const mergedComponents = { ...defaultComponents, ...customComponents };
-  
+  // Memoised on the override object. Rebuilding this every render gave React a new
+  // element *type* for each overridden tag, which unmounted and remounted that part
+  // of the document — discarding any state inside a custom component.
+  const mergedComponents = useMemo(
+    () => ({ ...defaultComponents, ...customComponents }),
+    [customComponents]
+  );
+
   return (
     <div className={className} style={style}>
       {renderTokens(tokens, mergedComponents)}
@@ -424,8 +443,11 @@ export function InlineMarkdown({
   components: customComponents = {},
 }: MarkdownProps) {
   const tokens = useMemo(() => parseInline(content), [content]);
-  const mergedComponents = { ...defaultComponents, ...customComponents };
-  
+  const mergedComponents = useMemo(
+    () => ({ ...defaultComponents, ...customComponents }),
+    [customComponents]
+  );
+
   return (
     <span className={className} style={style}>
       {renderTokens(tokens, mergedComponents)}
