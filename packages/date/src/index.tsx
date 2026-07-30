@@ -293,24 +293,81 @@ export function Calendar({
     return days;
   }, [locale, weekStartsOn]);
 
-  const calendarDays = useMemo(() => {
+  // Laid out as complete rows of seven so the grid has real `role="row"` structure —
+  // a flat list padded only at the front cannot express that.
+  const weeks = useMemo(() => {
     const days: (Date | null)[] = [];
     const firstDay = getFirstDayOfMonth(month);
     const daysInMonth = getDaysInMonth(month);
     const startOffset = (firstDay - weekStartsOn + 7) % 7;
-    
-    // Previous month days
-    for (let i = 0; i < startOffset; i++) {
-      days.push(null);
-    }
-    
-    // Current month days
+
+    for (let i = 0; i < startOffset; i++) days.push(null);
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(new Date(month.getFullYear(), month.getMonth(), i));
     }
-    
-    return days;
+    while (days.length % 7 !== 0) days.push(null);
+
+    const rows: (Date | null)[][] = [];
+    for (let i = 0; i < days.length; i += 7) rows.push(days.slice(i, i + 7));
+    return rows;
   }, [month, weekStartsOn]);
+
+  // Roving tabindex: exactly one day is in the tab order, and arrow keys move it.
+  // Before this the whole month was a flat run of tab stops, so reaching a date meant
+  // pressing Tab up to 31 times.
+  const [focusedDate, setFocusedDate] = useState<Date | null>(null);
+  const dayRefs = useRef(new Map<string, HTMLButtonElement | null>());
+  const shouldRefocus = useRef(false);
+
+  const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+
+  const activeDate = useMemo(() => {
+    if (focusedDate && isSameMonth(focusedDate, month)) return focusedDate;
+    if (value && isSameMonth(value, month)) return value;
+    const today = new Date();
+    if (isSameMonth(today, month)) return today;
+    return new Date(month.getFullYear(), month.getMonth(), 1);
+  }, [focusedDate, value, month]);
+
+  // Only ever moves focus in response to a key press — never on mount or on an
+  // unrelated re-render, which would rip focus away from whatever the user was using.
+  useEffect(() => {
+    if (!shouldRefocus.current) return;
+    shouldRefocus.current = false;
+    dayRefs.current.get(dayKey(activeDate))?.focus();
+  }, [activeDate]);
+
+  // Month arithmetic that does not roll over: addMonths(31 Jan, 1) lands on 3 March.
+  const shiftMonths = (date: Date, delta: number): Date => {
+    const target = new Date(date.getFullYear(), date.getMonth() + delta, 1);
+    const day = Math.min(date.getDate(), getDaysInMonth(target));
+    return new Date(target.getFullYear(), target.getMonth(), day);
+  };
+
+  const moveFocusTo = (next: Date) => {
+    shouldRefocus.current = true;
+    setFocusedDate(next);
+    if (!isSameMonth(next, month)) {
+      handleMonthChange(new Date(next.getFullYear(), next.getMonth(), 1));
+    }
+  };
+
+  const handleDayKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, date: Date) => {
+    let next: Date;
+    switch (e.key) {
+      case 'ArrowLeft': next = addDays(date, -1); break;
+      case 'ArrowRight': next = addDays(date, 1); break;
+      case 'ArrowUp': next = addDays(date, -7); break;
+      case 'ArrowDown': next = addDays(date, 7); break;
+      case 'Home': next = addDays(date, -((date.getDay() - weekStartsOn + 7) % 7)); break;
+      case 'End': next = addDays(date, 6 - ((date.getDay() - weekStartsOn + 7) % 7)); break;
+      case 'PageUp': next = shiftMonths(date, e.shiftKey ? -12 : -1); break;
+      case 'PageDown': next = shiftMonths(date, e.shiftKey ? 12 : 1); break;
+      default: return;
+    }
+    e.preventDefault();
+    moveFocusTo(next);
+  };
 
   const isDateDisabled = (date: Date): boolean => {
     // Compared by calendar day, not by timestamp. Bounds usually carry a time
@@ -373,64 +430,86 @@ export function Calendar({
         </button>
       </div>
       
-      {/* Week days header */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}>
-        {weekDays.map((day, i) => (
-          <div
-            key={i}
-            style={{
-              textAlign: 'center',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: '#6b7280',
-              padding: '4px',
-            }}
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-      
       {/* Calendar grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-        {calendarDays.map((date, i) => {
-          if (!date) {
-            return <div key={i} />;
-          }
-          
-          const isSelected = value && isSameDay(date, value);
-          const isTodayDate = isToday(date);
-          const disabled = isDateDisabled(date);
-          
-          return (
-            <button
+      <div role="grid" aria-label={monthYearLabel}>
+        {/* Week days header */}
+        <div
+          role="row"
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '8px' }}
+        >
+          {weekDays.map((day, i) => (
+            <div
               key={i}
-              type="button"
-              onClick={() => !disabled && onChange?.(date)}
-              disabled={disabled}
-              // A bare "30" tells a screen-reader user nothing. The full date does.
-              aria-label={new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)}
-              aria-current={isTodayDate ? 'date' : undefined}
-              aria-pressed={isSelected ? true : undefined}
+              role="columnheader"
+              aria-label={day}
               style={{
-                padding: '8px',
-                border: 'none',
-                borderRadius: '50%',
-                background: isSelected ? '#3b82f6' : 'transparent',
-                color: isSelected ? 'white' : disabled ? '#d1d5db' : '#111827',
-                fontWeight: isTodayDate ? 700 : 400,
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                // Today's ring is drawn with box-shadow so that `outline` stays free
-                // for the browser's focus indicator. Using outline for the ring meant
-                // every other day set `outline: none` and lost its focus ring
-                // entirely — the grid was unusable by keyboard.
-                boxShadow: isTodayDate && !isSelected ? 'inset 0 0 0 2px #3b82f6' : undefined,
+                textAlign: 'center',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: '#6b7280',
+                padding: '4px',
               }}
             >
-              {date.getDate()}
-            </button>
-          );
-        })}
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {weeks.map((week, wi) => (
+          <div
+            key={wi}
+            role="row"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}
+          >
+            {week.map((date, di) => {
+              if (!date) return <div key={di} role="gridcell" aria-disabled="true" />;
+
+              const isSelected = Boolean(value && isSameDay(date, value));
+              const isTodayDate = isToday(date);
+              const disabled = isDateDisabled(date);
+              const isTabStop = isSameDay(date, activeDate);
+
+              return (
+                <div key={di} role="gridcell" aria-selected={isSelected}>
+                  <button
+                    type="button"
+                    ref={(el) => { dayRefs.current.set(dayKey(date), el); }}
+                    // `aria-disabled` rather than the native `disabled` attribute:
+                    // a natively disabled button cannot be focused, which would break
+                    // arrow-key navigation the moment it crossed an out-of-range day,
+                    // and it hides the day from screen readers entirely. APG asks for
+                    // unavailable dates to stay discoverable.
+                    aria-disabled={disabled || undefined}
+                    tabIndex={isTabStop ? 0 : -1}
+                    onClick={() => { if (!disabled) onChange?.(date); }}
+                    onKeyDown={(e) => handleDayKeyDown(e, date)}
+                    onFocus={() => setFocusedDate(date)}
+                    // A bare "30" tells a screen-reader user nothing. The full date does.
+                    aria-label={new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)}
+                    aria-current={isTodayDate ? 'date' : undefined}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: 'none',
+                      borderRadius: '50%',
+                      background: isSelected ? '#3b82f6' : 'transparent',
+                      color: isSelected ? 'white' : disabled ? '#d1d5db' : '#111827',
+                      fontWeight: isTodayDate ? 700 : 400,
+                      cursor: disabled ? 'not-allowed' : 'pointer',
+                      // Today's ring is drawn with box-shadow so that `outline` stays
+                      // free for the browser's focus indicator. Using outline for the
+                      // ring meant every other day set `outline: none` and lost its
+                      // focus ring entirely — the grid was unusable by keyboard.
+                      boxShadow: isTodayDate && !isSelected ? 'inset 0 0 0 2px #3b82f6' : undefined,
+                    }}
+                  >
+                    {date.getDate()}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -60,12 +60,22 @@ The 2026-07-30 pass closed a number of concrete gaps — `gauge` and `LinearGaug
 `role="meter"`, `json`'s expand control was a bare `<span onClick>`, `date`'s day cells
 announced as a bare number and its focus ring was suppressed across the whole grid,
 `tree` left collapsed subtrees in the accessibility tree, `menu` never exposed an
-active item. Two known gaps remain:
+active item.
 
-- **`date`'s calendar has no `role="grid"` and no arrow-key roving focus.** Reaching a
-  date means tabbing through every button in the month.
-- **`menu` moves no DOM focus.** It sets `aria-activedescendant`, but the highlight is
-  still driven by a global key listener rather than real focus management.
+A follow-up closed the two gaps that pass had deferred:
+
+- **`date` (0.3.0)** — the calendar is now a real `role="grid"` with rows and
+  gridcells, and a roving tabindex: one day sits in the tab order, and arrows,
+  Home/End and PageUp/PageDown move by day, week and month. Days are marked
+  `aria-disabled` rather than natively `disabled`, so out-of-range dates stay
+  focusable and discoverable — a natively disabled button cannot be focused, which
+  would have broken arrow navigation the moment it crossed one.
+- **`menu` (0.2.0)** — items are real focusable `<button role="menuitem">` elements
+  with a roving tabindex, and the key handler is bound to the menu instead of to
+  `document`. Focus enters on open, ArrowLeft returns from a submenu to the parent
+  item it came from, and `aria-haspopup` / `aria-expanded` describe submenus.
+
+Remaining, unchanged: no external audit and no screen-reader test matrix.
 
 ## 5. Version spread
 

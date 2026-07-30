@@ -352,7 +352,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "date",
     "name": "@input-kit/date",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Date picker component",
     "keywords": [
       "react",
@@ -361,7 +361,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 598,
+    "srcLines": 677,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -669,7 +669,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "menu",
     "name": "@input-kit/menu",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Context menu",
     "keywords": [
       "react",
@@ -678,7 +678,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 545,
+    "srcLines": 594,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1360,7 +1360,7 @@ export const bySlug = new Map(packages.map((p) => [p.slug, p]));
 
 export const totals = {
   count: 41,
-  srcLines: 27581,
+  srcLines: 27709,
   testLines: 10048,
   tested: 12,
 };

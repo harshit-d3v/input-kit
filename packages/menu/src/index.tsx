@@ -149,7 +149,8 @@ export function Menu({
   className,
   style,
   isSubmenu = false,
-}: MenuProps & { isSubmenu?: boolean }) {
+  onDismissSubmenu,
+}: MenuProps & { isSubmenu?: boolean; onDismissSubmenu?: () => void }) {
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -185,64 +186,96 @@ export function Menu({
     return -1;
   }, [navigableItems]);
 
-  useEffect(() => {
-    const firstEnabledIndex = navigableItems.findIndex(item => !item.disabled);
-    setFocusedIndex(firstEnabledIndex);
-  }, [navigableItems]);
-  
-  // Keyboard navigation.
+  // Keyboard navigation is bound to the menu element and driven by REAL focus.
   //
-  // Only one menu in a chain may own the keyboard. Every mounted `Menu` used to bind
-  // its own document listener, so with a submenu open ArrowDown moved the highlight
-  // in the parent and the child at the same time. While a submenu is showing, the
-  // parent stands down; a submenu never opens a submenu of its own here.
-  const hasOpenSubmenu = submenuItem !== null;
-  useEffect(() => {
-    if (hasOpenSubmenu) return;
+  // It used to be a document-level listener moving a background colour: nothing was
+  // ever focused, so assistive tech was told nothing about the active item, and every
+  // mounted Menu listened at once — with a submenu open, ArrowDown advanced the
+  // parent and the child simultaneously. Focus living inside one menu at a time fixes
+  // both: only the focused menu's handler fires.
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-    const handleKeyDown = (e: globalThis.KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          setFocusedIndex(prev => getNextEnabledIndex(prev, 1));
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setFocusedIndex(prev => getNextEnabledIndex(prev === -1 ? 0 : prev, -1));
-          break;
-        case 'ArrowRight':
-          if (focusedIndex >= 0) {
-            const item = navigableItems[focusedIndex];
-            if (item.children) {
-              const itemEl = menuRef.current?.querySelector(`[data-index="${focusedIndex}"]`);
-              if (itemEl) {
-                const rect = itemEl.getBoundingClientRect();
-                setSubmenuItem(item);
-                setSubmenuPosition(clampMenuPosition({ x: rect.right, y: rect.top }, item.children.length));
-              }
-            }
-          }
-          break;
-        case 'ArrowLeft':
-          setSubmenuItem(null);
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (focusedIndex >= 0) {
-            const item = navigableItems[focusedIndex];
-            if (!item.disabled && !item.children) {
-              item.onClick?.();
-              onSelect?.(item);
-              onClose();
-            }
-          }
-          break;
+  // Focus the first selectable item on open, so the keyboard has somewhere to start.
+  useEffect(() => {
+    const first = navigableItems.findIndex((item) => !item.disabled);
+    if (first === -1) {
+      menuRef.current?.focus();
+      return;
+    }
+    setFocusedIndex(first);
+    itemRefs.current[first]?.focus();
+    // Deliberately keyed on nothing: this runs once per mounted menu (and each
+    // submenu is a fresh mount), which is exactly when focus should enter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const focusIndex = useCallback((index: number) => {
+    if (index < 0) return;
+    setFocusedIndex(index);
+    itemRefs.current[index]?.focus();
+  }, []);
+
+  const openSubmenuFor = useCallback((item: MenuItem, index: number) => {
+    if (!item.children) return;
+    const itemEl = menuRef.current?.querySelector(`[data-index="${index}"]`);
+    if (!itemEl) return;
+    const rect = itemEl.getBoundingClientRect();
+    setSubmenuItem(item);
+    setSubmenuPosition(clampMenuPosition({ x: rect.right, y: rect.top }, item.children.length));
+  }, []);
+
+  const handleMenuKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        focusIndex(getNextEnabledIndex(focusedIndex, 1));
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        focusIndex(getNextEnabledIndex(focusedIndex === -1 ? 0 : focusedIndex, -1));
+        break;
+      case 'Home':
+        e.preventDefault();
+        focusIndex(navigableItems.findIndex((item) => !item.disabled));
+        break;
+      case 'End': {
+        e.preventDefault();
+        for (let i = navigableItems.length - 1; i >= 0; i--) {
+          if (!navigableItems[i].disabled) { focusIndex(i); break; }
+        }
+        break;
       }
-    };
-    
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusedIndex, getNextEnabledIndex, hasOpenSubmenu, navigableItems, onClose, onSelect]);
+      case 'ArrowRight': {
+        if (focusedIndex < 0) return;
+        const item = navigableItems[focusedIndex];
+        if (!item?.children) return;
+        e.preventDefault();
+        openSubmenuFor(item, focusedIndex);
+        break;
+      }
+      case 'ArrowLeft':
+        // In a submenu this hands control back to the parent; in a root menu with a
+        // submenu showing it closes that submenu.
+        e.preventDefault();
+        if (isSubmenu) onDismissSubmenu?.();
+        else setSubmenuItem(null);
+        break;
+      case 'Enter':
+      case ' ': {
+        if (focusedIndex < 0) return;
+        const item = navigableItems[focusedIndex];
+        if (!item || item.disabled) return;
+        e.preventDefault();
+        if (item.children) { openSubmenuFor(item, focusedIndex); return; }
+        item.onClick?.();
+        onSelect?.(item);
+        onClose();
+        break;
+      }
+      default:
+        return;
+    }
+  };
 
   // Dismiss on outside click and on Escape.
   //
@@ -322,11 +355,7 @@ export function Menu({
         ref={menuRef}
         role="menu"
         tabIndex={-1}
-        aria-activedescendant={
-          focusedIndex >= 0 && navigableItems[focusedIndex]
-            ? `${menuId}-item-${navigableItems[focusedIndex].id}`
-            : undefined
-        }
+        onKeyDown={handleMenuKeyDown}
         className={className}
         style={{
           position: 'fixed',
@@ -360,16 +389,29 @@ export function Menu({
           const isFocused = navIndex === focusedIndex;
           
           return (
-            <div
+            <button
               key={item.id}
+              type="button"
+              ref={(el) => { itemRefs.current[navIndex] = el; }}
               id={`${menuId}-item-${item.id}`}
               data-id={item.id}
               data-index={navIndex}
               role="menuitem"
               aria-disabled={item.disabled || undefined}
+              aria-haspopup={item.children ? 'menu' : undefined}
+              aria-expanded={item.children ? submenuItem?.id === item.id : undefined}
+              // Roving tabindex: one item in the tab order, the rest reachable by
+              // arrow keys. `aria-disabled` rather than the native attribute keeps
+              // disabled entries discoverable instead of skipping them silently.
+              tabIndex={isFocused ? 0 : -1}
               onClick={() => handleItemClick(item)}
+              onFocus={() => setFocusedIndex(navIndex)}
               onMouseEnter={() => handleItemHover(item, navIndex)}
               style={{
+                width: '100%',
+                textAlign: 'left',
+                font: 'inherit',
+                border: 'none',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '12px',
@@ -394,13 +436,13 @@ export function Menu({
                 </span>
               )}
               {item.children && (
-                <span style={{ fontSize: '12px', color: '#9ca3af' }}>›</span>
+                <span style={{ fontSize: '12px', color: '#9ca3af' }} aria-hidden="true">›</span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
-      
+
       {/* Submenu */}
       {submenuItem && submenuItem.children && (
         <Menu
@@ -409,6 +451,13 @@ export function Menu({
           onClose={onClose}
           onSelect={onSelect}
           isSubmenu
+          onDismissSubmenu={() => {
+            // ArrowLeft in the submenu returns control here, and focus goes back to
+            // the parent item it came from rather than being dropped on the body.
+            const parentIndex = navigableItems.findIndex((i) => i.id === submenuItem.id);
+            setSubmenuItem(null);
+            if (parentIndex >= 0) focusIndex(parentIndex);
+          }}
         />
       )}
     </>,
