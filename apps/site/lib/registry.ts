@@ -20,7 +20,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "card",
     "name": "@input-kit/card",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Credit card input",
     "keywords": [
       "react",
@@ -29,7 +29,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 899,
+    "srcLines": 917,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -57,7 +57,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "chart",
     "name": "@input-kit/chart",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Chart components",
     "keywords": [
       "react",
@@ -66,7 +66,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 478,
+    "srcLines": 512,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -112,7 +112,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "code",
     "name": "@input-kit/code",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Code block with syntax highlighting",
     "keywords": [
       "react",
@@ -121,7 +121,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 412,
+    "srcLines": 411,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -213,7 +213,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "command",
     "name": "@input-kit/command",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Command palette",
     "keywords": [
       "react",
@@ -222,7 +222,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 490,
+    "srcLines": 494,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -269,7 +269,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "crop",
     "name": "@input-kit/crop",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Image cropper",
     "keywords": [
       "react",
@@ -278,7 +278,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 525,
+    "srcLines": 543,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -324,7 +324,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "currency",
     "name": "@input-kit/currency",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Currency formatting",
     "keywords": [
       "react",
@@ -333,7 +333,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 124,
+    "srcLines": 183,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -352,7 +352,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "date",
     "name": "@input-kit/date",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Date picker component",
     "keywords": [
       "react",
@@ -361,7 +361,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 556,
+    "srcLines": 598,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -390,7 +390,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "dropzone",
     "name": "@input-kit/dropzone",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "description": "File dropzone",
     "keywords": [
       "react",
@@ -399,7 +399,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 576,
+    "srcLines": 601,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -448,7 +448,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "fullscreen",
     "name": "@input-kit/fullscreen",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Fullscreen API",
     "keywords": [
       "react",
@@ -457,7 +457,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 110,
+    "srcLines": 119,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -470,7 +470,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "gauge",
     "name": "@input-kit/gauge",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Gauge/meter",
     "keywords": [
       "react",
@@ -479,7 +479,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 480,
+    "srcLines": 516,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -543,7 +543,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "i18n",
     "name": "@input-kit/i18n",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Internationalization",
     "keywords": [
       "react",
@@ -552,7 +552,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 350,
+    "srcLines": 412,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -584,7 +584,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "json",
     "name": "@input-kit/json",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "JSON viewer",
     "keywords": [
       "react",
@@ -593,7 +593,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 290,
+    "srcLines": 368,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -608,7 +608,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "markdown",
     "name": "@input-kit/markdown",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Markdown renderer",
     "keywords": [
       "react",
@@ -617,7 +617,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 438,
+    "srcLines": 460,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -636,7 +636,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "mask",
     "name": "@input-kit/mask",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Input masking",
     "keywords": [
       "react",
@@ -645,7 +645,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 429,
+    "srcLines": 465,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -669,7 +669,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "menu",
     "name": "@input-kit/menu",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Context menu",
     "keywords": [
       "react",
@@ -678,7 +678,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 487,
+    "srcLines": 545,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -737,7 +737,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "online",
     "name": "@input-kit/online",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Network status",
     "keywords": [
       "react",
@@ -746,7 +746,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 122,
+    "srcLines": 128,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -761,7 +761,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "otp",
     "name": "@input-kit/otp",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "OTP input component",
     "keywords": [
       "react",
@@ -770,7 +770,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 397,
+    "srcLines": 451,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -789,7 +789,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "paste",
     "name": "@input-kit/paste",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Clipboard paste handler",
     "keywords": [
       "react",
@@ -798,7 +798,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 453,
+    "srcLines": 479,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -853,7 +853,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "resize",
     "name": "@input-kit/resize",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Resize observer hook",
     "keywords": [
       "react",
@@ -862,7 +862,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 370,
+    "srcLines": 383,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -892,7 +892,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "search",
     "name": "@input-kit/search",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Search input with debounce",
     "keywords": [
       "react",
@@ -901,7 +901,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 127,
+    "srcLines": 149,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -916,7 +916,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "slider",
     "name": "@input-kit/slider",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Accessible React slider primitives with single and range thumbs",
     "keywords": [
       "react",
@@ -925,7 +925,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 740,
+    "srcLines": 749,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -944,7 +944,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "sparkline",
     "name": "@input-kit/sparkline",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "SVG sparkline, area, and bar charts for React dashboards",
     "keywords": [
       "react",
@@ -953,7 +953,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 643,
+    "srcLines": 660,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -974,7 +974,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "split",
     "name": "@input-kit/split",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Resizable split panes and panel layouts with keyboard support",
     "keywords": [
       "react",
@@ -983,7 +983,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 673,
+    "srcLines": 704,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1041,7 +1041,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "tabs",
     "name": "@input-kit/tabs",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Accessible React tabs with roving focus and compound primitives",
     "keywords": [
       "react",
@@ -1050,7 +1050,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 372,
+    "srcLines": 384,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1063,8 +1063,8 @@ export const packages: PackageEntry[] = [
       "TabPanelProps",
       "Tabs",
       "TabList",
-      "Tab",
       "TabPanels",
+      "Tab",
       "TabPanel",
       "useTabsContext"
     ],
@@ -1075,7 +1075,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "time",
     "name": "@input-kit/time",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Locale-aware relative time, countdown, and stopwatch utilities for React",
     "keywords": [
       "react",
@@ -1084,7 +1084,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 737,
+    "srcLines": 782,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1121,7 +1121,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "timeline",
     "name": "@input-kit/timeline",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "Accessible React timelines for milestones, launches, and journey storytelling",
     "keywords": [
       "react",
@@ -1130,7 +1130,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 887,
+    "srcLines": 895,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1229,7 +1229,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "tree",
     "name": "@input-kit/tree",
-    "version": "0.1.1",
+    "version": "0.2.0",
     "description": "Accessible React tree views with keyboard navigation, selection, and virtualization",
     "keywords": [
       "react",
@@ -1238,7 +1238,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 1300,
+    "srcLines": 1324,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1268,7 +1268,7 @@ export const packages: PackageEntry[] = [
   {
     "slug": "upload",
     "name": "@input-kit/upload",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "description": "React file upload primitives with drag-and-drop, previews, validation, and queues",
     "keywords": [
       "react",
@@ -1277,7 +1277,7 @@ export const packages: PackageEntry[] = [
       "typescript",
       "headless"
     ],
-    "srcLines": 1193,
+    "srcLines": 1232,
     "testLines": 0,
     "hasTests": false,
     "exportNames": [
@@ -1360,7 +1360,7 @@ export const bySlug = new Map(packages.map((p) => [p.slug, p]));
 
 export const totals = {
   count: 41,
-  srcLines: 26775,
+  srcLines: 27581,
   testLines: 10048,
   tested: 12,
 };

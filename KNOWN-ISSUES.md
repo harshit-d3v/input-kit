@@ -9,7 +9,16 @@ Written down rather than left to be discovered. Everything here is open work.
   package's demo. `npm run typecheck`.
 - **All 41 packages build clean.** `npm run build`.
 
-## 1. 28 of 41 packages have no tests
+A second review pass (2026-07-30) went through all 29 packages that carry no test
+suite and fixed roughly 120 defects across 28 of them — including several that made a
+package's headline feature wrong in its default configuration. The full write-up, one
+section per package, is in [`REVIEW-2026-07-30.md`](REVIEW-2026-07-30.md); the
+summary is under "Fixed" below. `clipboard` was the only package with no defects found.
+
+That pass fixed behaviour, not coverage — it added no tests, so the section below is
+unchanged in substance.
+
+## 1. 29 of 41 packages have no tests
 
 Listed with their source volume in the README. These have working implementations
 and runnable demos but nothing guarding them.
@@ -47,11 +56,57 @@ Keyboard navigation and ARIA wiring follow the [APG](https://www.w3.org/WAI/ARIA
 patterns, and the packages with suites cover it, but there is no external audit and
 no screen-reader test matrix.
 
-## 5. Most packages are still `0.1.x`
+The 2026-07-30 pass closed a number of concrete gaps — `gauge` and `LinearGauge` had no
+`role="meter"`, `json`'s expand control was a bare `<span onClick>`, `date`'s day cells
+announced as a bare number and its focus ring was suppressed across the whole grid,
+`tree` left collapsed subtrees in the accessibility tree, `menu` never exposed an
+active item. Two known gaps remain:
 
-Treat them as early. APIs may change before 1.0.
+- **`date`'s calendar has no `role="grid"` and no arrow-key roving focus.** Reaching a
+  date means tabbing through every button in the month.
+- **`menu` moves no DOM focus.** It sets `aria-activedescendant`, but the highlight is
+  still driven by a global key listener rather than real focus management.
+
+## 5. Version spread
+
+Packages fixed in the 2026-07-30 pass are on `0.1.x` or `0.2.x`; `hooks` is at `2.0.0`
+and `toast` at `1.0.2`. Everything below 1.0 should still be treated as early — APIs
+may change.
 
 ## Fixed
+
+### The 2026-07-30 review pass — 28 packages
+
+Every package without a test suite was read line by line and its defects fixed. Full
+detail per package in [`REVIEW-2026-07-30.md`](REVIEW-2026-07-30.md). The ones that
+mattered most:
+
+- **`gauge` (0.2.0)** — horizontal `LinearGauge` rendered ~1% full at every value: the
+  0–1 fraction was interpolated straight into a CSS percent, while the vertical branch
+  three lines away scaled it correctly. `animated` was also inert — it transitioned
+  `stroke-dashoffset` on a path that changed via `d`, and moved the needle through
+  `x2`/`y2`, neither of which browsers animate.
+- **`split` (0.2.0)** — controlled `sizes` was an infinite render loop. The sync effect
+  keyed on array identity, and the documented usage passes an inline literal.
+- **`otp` (0.2.0)** — `onComplete` re-fired on every render once the code was full, so
+  consumers using it to submit submitted repeatedly.
+- **`dropzone` (0.2.1)** — `dragenter` threw a `TypeError` in Chrome whenever `accept`
+  used file extensions, because the synthetic drag object has no filename.
+- **`menu` (0.1.1)** — `DropdownMenu` could not be dismissed by clicking away; outside
+  click and Escape lived only in `useContextMenu`, which it does not use.
+- **`markdown` (0.1.1)** — `//evil.com` passed the URL sanitiser as an "internal" path.
+- **`tree` (0.2.0)** — all nine mutators invoked consumer callbacks from inside
+  `setState` updaters, so StrictMode fired every one of them twice.
+- **`mask` (0.2.0)** — `MaskedInput` looped forever with `showMaskOnFocus={false}`; the
+  documented `A` mask character never uppercased.
+- **`upload` (0.1.2)** — every image preview leaked its object URL, and all four
+  callbacks received a file snapshot frozen at `status: 'idle', progress: 0`.
+- **`date` (0.2.0)** — `parseDate('13/45/2026')` returned a real date in 2027 instead of
+  `null`; `minDate` carrying a time component disabled that whole day.
+- **`chart` (0.2.0)** — all-negative series scaled outside the plot area, flat series
+  rendered `NaN` paths, and `fill` crashed on an empty series.
+- **`sparkline` (0.1.2)** — `SparkBar` drew wrong heights for any data containing
+  negatives, and `SparkArea`'s `Math.random()` gradient id broke SSR hydration.
 
 ### `@input-kit/hooks` — the whole suite (2.0.0)
 
